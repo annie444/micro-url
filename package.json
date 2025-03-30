@@ -1,0 +1,23 @@
+{
+  "name": "micro-url-project",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "js/*"
+  ],
+  "scripts": {
+    "build-server": "cargo build -p server --release"
+  },
+  "engines": {
+    "node": ">=22.14.0",
+    "pnpm": "9.6.0"
+  },
+  "packageManager": "pnpm@9.6.0",
+  "devDependencies": {
+    "@nx/workspace": "20.6.4",
+    "nx": "20.6.4"
+  },
+  "dependencies": {
+    "@monodon/rust": "2.2.0"
+  }
+}

@@ -1,0 +1,38 @@
+
+[workspace]
+resolver = '2'
+members = ['apps/server', 'libs/migration', 'libs/entity']
+
+[workspace.dependencies]
+sea-orm = { version = '1.1.7', features = [
+  'runtime-tokio-native-tls',
+  'sqlx-postgres',
+  'debug-print',
+  'macros',
+  'with-chrono',
+  'with-json',
+  'with-uuid',
+  'postgres-array',
+] }
+sea-query = '0'
+uuid = { version = '1.16.0', features = ['fast-rng'] }
+async-std = { version = '1', features = ['attributes', 'tokio1'] }
+serde = { version = '1.0.219', features = ['serde_derive', 'derive'] }
+chrono = '0.4.40'
+serde_json = '1.0.140'
+axum = { version = '0.7', features = [
+  'macros',
+  'http1',
+  'http2',
+  'json',
+  'multipart',
+  'tracing',
+  'form',
+  'query',
+] }
+tokio = { version = '1.33.0', features = ['full'] }
+tower = { version = '0.5.2', features = ['full'] }
+tower-http = { version = '0.6.2', features = ['full', 'trace'] }
+
+[profile.release]
+lto = true
