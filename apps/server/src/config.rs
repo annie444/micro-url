@@ -1,5 +1,8 @@
-use serde::{Deserialize, Serialize};
 use std::env;
+
+use openidconnect::{core::CoreClaimName, Scope};
+use serde::{Deserialize, Serialize};
+use shuttle_runtime::SecretStore;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -9,6 +12,23 @@ pub struct ServerConfig {
     pub addr: String,
     pub port: u16,
     pub scheme: String,
+    pub assets_path: String,
+    pub oidc: OidcConfig,
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            db: ServerDatabaseConfig::default(),
+            oidc: OidcConfig::default(),
+            internal_url: "127.0.0.1:3000".to_string(),
+            external_url: "https://example.com".to_string(),
+            addr: "127.0.0.1".to_string(),
+            port: 3000,
+            scheme: "http".to_string(),
+            assets_path: "../../js/frontend/dist".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,7 +41,46 @@ pub struct ServerDatabaseConfig {
     pub schema: Option<String>,
 }
 
+impl Default for ServerDatabaseConfig {
+    fn default() -> Self {
+        Self {
+            username: None,
+            password: None,
+            hostname: None,
+            port: None,
+            database: None,
+            schema: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OidcConfig {
+    pub name: String,
+    pub client_id: String,
+    pub client_secret: String,
+    pub discovery_url: String,
+    pub claims: Vec<CoreClaimName>,
+    pub scopes: Vec<Scope>,
+    pub cert_path: Option<String>,
+}
+
+impl Default for OidcConfig {
+    fn default() -> Self {
+        Self {
+            name: "".to_string(),
+            client_id: "".to_string(),
+            client_secret: "".to_string(),
+            discovery_url: "".to_string(),
+            cert_path: None,
+            scopes: vec![],
+            claims: vec![],
+        }
+    }
+}
+
 impl ServerConfig {
+    #[tracing::instrument]
     pub fn from_env() -> Self {
         dotenvy::dotenv().ok();
         let db = ServerDatabaseConfig::from_env();
@@ -29,11 +88,15 @@ impl ServerConfig {
         let port: u16 = get_env_var("PORT")
             .unwrap_or_else(|| "3000".to_string())
             .parse()
-            .unwrap();
+            .expect("PORT must be a number");
         let scheme = get_env_var("SCHEME").unwrap_or_else(|| "http".to_string());
-        let internal_url = get_env_var("INTERNAL_URL")
-            .unwrap_or_else(|| format!("{}://{}:{}", scheme, addr, port));
-        let external_url = get_env_var("EXTERNAL_URL").unwrap_or_else(|| internal_url.clone());
+        let internal_url =
+            get_env_var("INTERNAL_URL").unwrap_or_else(|| format!("{}:{}", addr, port));
+        let external_url = get_env_var("EXTERNAL_URL")
+            .unwrap_or_else(|| format!("{}://{}", &scheme, &internal_url));
+        let assets_path =
+            get_env_var("ASSETS_PATH").unwrap_or_else(|| "../../js/frontend/dist".to_string());
+        let oidc = OidcConfig::from_env();
         Self {
             db,
             internal_url,
@@ -41,11 +104,109 @@ impl ServerConfig {
             addr,
             port,
             scheme,
+            assets_path,
+            oidc,
+        }
+    }
+
+    #[tracing::instrument(skip(secrets))]
+    pub fn from_secret(secrets: SecretStore) -> Self {
+        let oidc = OidcConfig::from_secret(secrets.clone());
+        let external_url = secrets
+            .get("EXTERNAL_URL")
+            .unwrap_or_else(|| "http://localhost:8000".to_string());
+        let assets_path = secrets
+            .get("ASSETS_PATH")
+            .unwrap_or_else(|| "../../js/frontend/dist".to_string());
+        Self {
+            oidc,
+            external_url,
+            assets_path,
+            ..Self::default()
+        }
+    }
+}
+
+impl OidcConfig {
+    #[tracing::instrument]
+    pub fn from_env() -> Self {
+        let name = get_env_var("OIDC_NAME").unwrap_or_else(|| "default".to_string());
+        let client_id: String = get_env_var("OIDC_CLIENT_ID").expect("OIDC_CLIENT_ID is required");
+        let client_secret: String =
+            get_env_var("OIDC_CLIENT_SECRET").expect("OIDC_CLIENT_SECRET is required");
+        let discovery_url: String =
+            get_env_var("OIDC_DISCOVERY_URL").expect("OIDC_DISCOVERY_URL is required");
+        let scopes: Vec<Scope> = get_env_var("OIDC_SCOPES")
+            .unwrap_or_else(|| "openid email profile".to_string())
+            .split_whitespace()
+            .map(|s| Scope::new(s.to_string()))
+            .collect();
+        let claims: Vec<CoreClaimName> = get_env_var("OIDC_CLAIMS")
+            .unwrap_or_else(|| {
+                "sub aud email email_verified exp iat iss name given_name family_name \
+                 preferred_username picture locale"
+                    .to_string()
+            })
+            .split_whitespace()
+            .map(|s| CoreClaimName::new(s.to_string()))
+            .collect();
+        let cert_path = get_env_var("OIDC_CERT_PATH");
+        Self {
+            name,
+            client_id,
+            client_secret,
+            discovery_url,
+            scopes,
+            claims,
+            cert_path,
+        }
+    }
+
+    #[tracing::instrument(skip(secrets))]
+    pub fn from_secret(secrets: SecretStore) -> Self {
+        let name: String = secrets
+            .get("OIDC_NAME")
+            .unwrap_or_else(|| "default".to_string());
+        let client_id: String = secrets
+            .get("OIDC_CLIENT_ID")
+            .expect("OIDC_CLIENT_ID is required");
+        let client_secret: String = secrets
+            .get("OIDC_CLIENT_SECRET")
+            .expect("OIDC_CLIENT_SECRET is required");
+        let discovery_url: String = secrets
+            .get("OIDC_DISCOVERY_URL")
+            .expect("OIDC_DISCOVERY_URL is required");
+        let scopes: Vec<Scope> = secrets
+            .get("OIDC_SCOPES")
+            .unwrap_or_else(|| "openid email profile".to_string())
+            .split_whitespace()
+            .map(|s| Scope::new(s.to_string()))
+            .collect();
+        let claims: Vec<CoreClaimName> = secrets
+            .get("OIDC_CLAIMS")
+            .unwrap_or_else(|| {
+                "sub aud email email_verified exp iat iss name given_name family_name \
+                 preferred_username picture locale"
+                    .to_string()
+            })
+            .split_whitespace()
+            .map(|s| CoreClaimName::new(s.to_string()))
+            .collect();
+        let cert_path = secrets.get("OIDC_CERT_PATH");
+        Self {
+            name,
+            client_id,
+            client_secret,
+            discovery_url,
+            scopes,
+            claims,
+            cert_path,
         }
     }
 }
 
 impl ServerDatabaseConfig {
+    #[tracing::instrument]
     pub fn from_env() -> Self {
         dotenvy::dotenv().ok();
         let username = get_env_var("DB_USER");
@@ -64,6 +225,7 @@ impl ServerDatabaseConfig {
         }
     }
 
+    #[tracing::instrument]
     pub fn connection_string(&self) -> String {
         let mut connection_str = String::from("postgres://");
         if let Some(username) = &self.username {
@@ -93,6 +255,7 @@ impl ServerDatabaseConfig {
     }
 }
 
+#[tracing::instrument]
 fn get_env_var(key: &str) -> Option<String> {
     match env::var(key) {
         Ok(val) => Some(val),

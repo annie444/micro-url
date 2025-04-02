@@ -1,17 +1,45 @@
 use axum::extract::{MatchedPath, Request};
 use tower_http::{
     classify::{ServerErrorsAsFailures, SharedClassifier},
-    trace::{MakeSpan, TraceLayer},
+    trace::{DefaultOnResponse, MakeSpan, TraceLayer},
 };
 use tracing::Level;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 #[cfg(debug_assertions)]
 pub const DEFAULT_MESSAGE_LEVEL: Level = Level::DEBUG;
 #[cfg(not(debug_assertions))]
 pub const DEFAULT_MESSAGE_LEVEL: Level = Level::INFO;
+
+pub fn init_subscriber() {
+    // Set up logging
+    tracing_subscriber::Registry::default()
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+            // axum logs rejections from built-in extractors with the `axum::rejection`
+            // target, at `TRACE` level. `axum::rejection=trace` enables showing those events
+            format!(
+                "{}=debug,tower_http=debug,axum::rejection=trace",
+                env!("CARGO_CRATE_NAME")
+            )
+            .into()
+        }))
+        .with(fmt::layer())
+        .init();
+}
+
+pub fn telemetry() -> TraceLayer<SharedClassifier<ServerErrorsAsFailures>, MicroUrlMakeSpan> {
+    TraceLayer::new_for_http()
+        .make_span_with(
+            MicroUrlMakeSpan::new()
+                .include_headers(true)
+                .level(DEFAULT_MESSAGE_LEVEL),
+        )
+        .on_response(
+            DefaultOnResponse::new()
+                .level(DEFAULT_MESSAGE_LEVEL)
+                .include_headers(true),
+        )
+}
 
 #[derive(Debug, Clone)]
 pub struct MicroUrlMakeSpan {
@@ -99,20 +127,4 @@ impl<B> MakeSpan<B> for MicroUrlMakeSpan {
             Level::TRACE => make_span!(Level::TRACE),
         }
     }
-}
-
-pub fn telemetry() -> TraceLayer<SharedClassifier<ServerErrorsAsFailures>, MicroUrlMakeSpan> {
-    tracing_subscriber::Registry::default()
-        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            // axum logs rejections from built-in extractors with the `axum::rejection`
-            // target, at `TRACE` level. `axum::rejection=trace` enables showing those events
-            format!(
-                "{}=debug,tower_http=debug,axum::rejection=trace",
-                env!("CARGO_CRATE_NAME")
-            )
-            .into()
-        }))
-        .with(fmt::layer())
-        .init();
-    TraceLayer::new_for_http().make_span_with(MicroUrlMakeSpan::new().include_headers(true))
 }
