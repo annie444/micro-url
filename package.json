@@ -6,7 +6,8 @@
     "js/*"
   ],
   "scripts": {
-    "build-server": "cargo build -p server --release"
+    "build-server": "cargo build -p server --release",
+    "run": "shuttle run"
   },
   "engines": {
     "node": ">=22.14.0",

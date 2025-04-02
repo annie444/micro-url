@@ -3,27 +3,54 @@ set dotenv-load := true
 set dotenv-required := false
 set export := true
 
+kanidm_admin_password := "1B0MN71XrDsN7Y4M2ATgKyFCvaXJW2ZcLpLxQP4qG6bTrdyJ"
+kanidm_idm_admin_password := "0D6aHBMxWN6JdZRQ78JFqVjPk4GDC20EK6Wf8cPByahQZvcS"
+
 build:
-  ./nx build
-  cargo build --release -vv --workspace
+  pnpm exec nx run-many --target=build
+
+lint:
+  pnpm exec nx run-many --target=lint
+
+test:
+  pnpm exec nx run-many --target=test
+
+run:
+  export RUST_LOG=trace
+  shuttle run
+
+kanidm-up:
+  podman run --detach \
+    --name kanidm \
+    --publish 8443:8443 \
+    --volume ./kanidm:/data:rw \
+    docker.io/kanidm/server:latest
 
 migrate-up:
-  sea-orm-cli migrate up --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+  sea-orm-cli migrate up \
+    --migration-dir ./libs/migration/ \
+    --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
 migrate-down:
-  sea-orm-cli migrate down --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+  sea-orm-cli migrate down \
+    --migration-dir ./libs/migration/ \
+    --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
 migrate-reset:
-  sea-orm-cli migrate fresh --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+  sea-orm-cli migrate fresh \
+    --migration-dir ./libs/migration/ \
+    --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
 migrate-status:
-  sea-orm-cli migrate status --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+  sea-orm-cli migrate status \
+    --migration-dir ./libs/migration/ \
+    --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
 generate:
   rm -rf entity/src
   sea-orm-cli generate entity \
     --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}" \
-    --output-dir "entity/src" \
+    --output-dir "libs/entity/src" \
     --verbose \
     --lib \
     --include-hidden-tables \
@@ -64,7 +91,7 @@ dev-db:
       --env POSTGRES_PASSWORD=${DB_PASS} \
       --env POSTGRES_DB=${DB_NAME} \
       docker.io/library/postgres:latest
-  else 
+  else
     echo "Unable to find either docker or podman"
   fi
 
@@ -76,6 +103,6 @@ dev-db-stop:
   elif command -v docker &> /dev/null; then
     docker stop dev-db
     docker rm dev-db
-  else 
+  else
     echo "Unable to find either docker or podman"
   fi

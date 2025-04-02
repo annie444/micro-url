@@ -48,6 +48,18 @@ impl MigrationTrait for Migration {
             )
             .await?;
         manager
+            .create_table(
+                Table::create()
+                    .table(Sessions::Table)
+                    .if_not_exists()
+                    .col(pk_auto(Sessions::Id))
+                    .col(string(Sessions::SessionId))
+                    .col(uuid(Sessions::UserId))
+                    .col(timestamp(Sessions::Expiry))
+                    .to_owned(),
+            )
+            .await?;
+        manager
             .create_index(
                 Index::create()
                     .table(ShortLink::Table)
@@ -104,6 +116,17 @@ impl MigrationTrait for Migration {
                     .on_update(ForeignKeyAction::Cascade)
                     .to_owned(),
             )
+            .await?;
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name(SessionsFk::UserId)
+                    .from(Sessions::Table, Sessions::UserId)
+                    .to(User::Table, User::UserId)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .on_update(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
             .await
     }
 
@@ -149,10 +172,29 @@ impl MigrationTrait for Migration {
             )
             .await?;
         manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .table(UserPass::Table)
+                    .name(UserPassFk::UserId)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .table(Sessions::Table)
+                    .name(SessionsFk::UserId)
+                    .to_owned(),
+            )
+            .await?;
+        manager
             .drop_table(Table::drop().table(ShortLink::Table).to_owned())
             .await?;
         manager
             .drop_table(Table::drop().table(UserPass::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(Sessions::Table).to_owned())
             .await?;
         manager
             .drop_table(Table::drop().table(User::Table).to_owned())
@@ -180,6 +222,33 @@ enum UserPass {
 
 enum UserPassFk {
     UserId,
+}
+
+#[derive(DeriveIden)]
+enum Sessions {
+    Table,
+    Id,
+    SessionId,
+    UserId,
+    Expiry,
+}
+
+enum SessionsFk {
+    UserId,
+}
+
+impl ToString for SessionsFk {
+    fn to_string(&self) -> String {
+        match self {
+            Self::UserId => "fk_user_id".to_owned(),
+        }
+    }
+}
+
+impl From<SessionsFk> for String {
+    fn from(fk: SessionsFk) -> Self {
+        fk.to_string()
+    }
 }
 
 impl ToString for UserPassFk {
