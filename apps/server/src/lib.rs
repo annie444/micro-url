@@ -17,7 +17,7 @@ use std::{
 use axum::{
     http::{HeaderName, Request},
     response::Redirect,
-    routing::{get, post},
+    routing::{delete, get, post, put},
     Router,
 };
 pub use config::ServerConfig;
@@ -83,20 +83,26 @@ pub async fn init_router(config: config::ServerConfig, state: Option<ServerState
     }
 
     let app = Router::new()
+        // Base routes
         .nest_service(
             "/ui",
             ServeDir::new(asset_path).append_index_html_on_directories(true),
         )
-        .route("/api/shorten", post(urls::new_url))
-        .route(
-            "/api/{id}",
-            get(urls::url_info)
-                .delete(urls::delete_url)
-                .put(urls::update_url),
-        )
         .route("/", get(|| async { Redirect::to("/ui/index.html") }))
         .route("/{id}", get(urls::get_url))
-        .route("/login/oidc", post(user::login_oidc))
+        // API routes
+        .route("/api/shorten", post(urls::new_url))
+        .route("/api/url/{id}", get(urls::url_info))
+        .route("/api/url/delete/{id}", delete(urls::delete_url))
+        .route("/api/url/update/{id}", put(urls::update_url))
+        .route("/api/oidc", get(user::get_oidc_provider))
+        // Protected routes
+        .route("/api/user", get(user::get_user))
+        .route("/api/user/urls", get(user::get_user_urls))
+        // User routes
+        .route("/auth/register", get(user::add_local_user))
+        .route("/auth/login", post(user::local_login))
+        .route("/auth/login/oidc", post(user::login_oidc))
         .route("/auth/callback", get(user::oidc_callback))
         .with_state(state)
         .layer(

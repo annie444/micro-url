@@ -49,6 +49,10 @@ pub enum ServerError {
     ),
     #[error("Error validating OIDC server response")]
     InvalidCsrfToken,
+    #[error("Error running password cyphers: {0}")]
+    PasswordError(#[from] argon2::Error),
+    #[error("Error hashing password: {0}")]
+    PasswordHashError(#[from] argon2::password_hash::Error),
 }
 
 impl IntoResponse for ServerError {
@@ -127,6 +131,14 @@ impl IntoResponse for ServerError {
             Self::DatabaseError(e) => {
                 error!("Database error: {}", e);
                 (StatusCode::INTERNAL_SERVER_ERROR, e)
+            }
+            Self::PasswordError(e) => {
+                error!("Password error: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+            }
+            Self::PasswordHashError(e) => {
+                error!("Password hash error: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
             }
         };
         response.into_response()

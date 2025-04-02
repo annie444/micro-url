@@ -57,6 +57,9 @@ sqlx = "0.8.3"
 url = { version = "2.5.4", features = ["serde"] }
 time = "0.3.41"
 openidconnect = { version = "4", features = ["native-tls", "reqwest"] }
+argon2 = { version = "0.5", features = ["std"] }
+utoipa = { version = "5.3.1", features = ["axum_extras", "auto_into_responses", "chrono", "config", "debug", "indexmap", "openapi_extensions", "preserve_order", "preserve_path_order", "rc_schema", "ulid", "url", "uuid"] }
+utoipa-axum = { version = "0.2.0", features = ["debug"] }
 
 [features]
 test = ["sea-orm/mock"]

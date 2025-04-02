@@ -1,5 +1,9 @@
 use std::cmp::PartialEq;
 
+use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    Argon2,
+};
 use axum::{
     debug_handler,
     extract::{Path, Query, State},
@@ -22,9 +26,10 @@ use uuid::Uuid;
 use crate::{
     error::ServerError,
     state::ServerState,
-    structs::{AuthRequest, NewUserRequest, UserProfile},
+    structs::{AuthRequest, LoginRequest, NewUserRequest, OidcName, UserProfile},
 };
 
+// /auth/register
 #[instrument]
 #[debug_handler]
 pub async fn add_local_user(
@@ -40,19 +45,120 @@ pub async fn add_local_user(
     };
     let new = new_user.insert(&state.conn).await?;
 
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let password_hash = argon2
+        .hash_password(payload.password.as_bytes(), &salt)?
+        .to_string();
+
     let new_user_pass = user_pass::ActiveModel {
         id: ActiveValue::NotSet,
         user_id: ActiveValue::set(new.user_id),
-        password: ActiveValue::set(payload.password),
+        password: ActiveValue::set(password_hash),
     };
     new_user_pass.insert(&state.conn).await?;
 
     Ok(Json(new))
 }
 
+// /auth/login
 #[instrument]
 #[debug_handler]
-pub async fn user_info(
+pub async fn local_login(
+    State(state): State<ServerState>,
+    jar: PrivateCookieJar,
+    Json(payload): Json<LoginRequest>,
+) -> Result<(PrivateCookieJar, Redirect), ServerError> {
+    let user = user::Entity::find()
+        .filter(user::Column::Email.eq(payload.email))
+        .one(&state.conn)
+        .await?;
+
+    let user = match user {
+        Some(user) => user,
+        None => return Err(ServerError::Unauthorized),
+    };
+
+    let user_pass = user_pass::Entity::find()
+        .filter(user_pass::Column::UserId.eq(user.user_id))
+        .one(&state.conn)
+        .await?;
+
+    let user_pass = match user_pass {
+        Some(user_pass) => user_pass,
+        None => return Err(ServerError::Unauthorized),
+    };
+
+    let argon2 = Argon2::default();
+    let password_hash = PasswordHash::new(&user_pass.password).unwrap();
+    argon2
+        .verify_password(payload.password.as_bytes(), &password_hash)
+        .map_err(|_| ServerError::Unauthorized)?;
+
+    let session_id = Uuid::new_v4().to_string();
+    let expiry = chrono::Utc::now().naive_utc() + chrono::Duration::days(1);
+
+    let session = sessions::ActiveModel {
+        id: ActiveValue::NotSet,
+        session_id: ActiveValue::set(session_id),
+        user_id: ActiveValue::set(user.user_id),
+        expiry: ActiveValue::set(expiry),
+    };
+
+    let session = session.insert(&state.conn).await?;
+
+    let Some(domain) = state.url.domain() else {
+        return Err(ServerError::OptionError);
+    };
+
+    let cookie = Cookie::build(("sid", session.session_id))
+        .domain(format!(".{}", domain))
+        .path("/")
+        .secure(true)
+        .http_only(true);
+
+    Ok((jar.add(cookie), Redirect::to("/protected")))
+}
+
+// /auth/logout
+#[instrument]
+#[debug_handler]
+pub async fn logout(
+    jar: PrivateCookieJar,
+    State(state): State<ServerState>,
+) -> Result<(PrivateCookieJar, Redirect), ServerError> {
+    let Some(cookie) = jar.get("sid") else {
+        return Err(ServerError::OptionError);
+    };
+
+    let session = sessions::Entity::find()
+        .filter(sessions::Column::SessionId.eq(cookie.value()))
+        .one(&state.conn)
+        .await?;
+
+    let session = match session {
+        Some(session) => session,
+        None => return Err(ServerError::OptionError),
+    };
+
+    session.delete(&state.conn).await?;
+
+    Ok((jar.remove("sid"), Redirect::to("/")))
+}
+
+#[instrument]
+#[debug_handler]
+pub async fn get_oidc_provider(
+    State(state): State<ServerState>,
+) -> Result<Json<OidcName>, ServerError> {
+    Ok(Json(OidcName {
+        name: state.oidc_config.name.clone(),
+    }))
+}
+
+#[instrument]
+#[debug_handler]
+pub async fn get_user(
     user: UserProfile,
     State(state): State<ServerState>,
 ) -> Result<Json<UserProfile>, ServerError> {

@@ -23,6 +23,11 @@ use uuid::Uuid;
 use crate::{error::ServerError, state::ServerState};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OidcName {
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewUrlRequest {
     pub url: String,
     pub short: Option<String>,
@@ -33,6 +38,12 @@ pub struct NewUrlRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewUserRequest {
     pub name: String,
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoginRequest {
     pub email: String,
     pub password: String,
 }
