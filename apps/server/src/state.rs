@@ -26,7 +26,7 @@ pub const CHARS: [char; 64] = [
 ];
 
 #[cfg(not(feature = "test"))]
-#[derive(Debug, Clone)]
+#[derive(FromRef, Debug, Clone)]
 pub struct ServerState {
     pub conn: DatabaseConnection,
     pub cache: LruCache<String, String>,
@@ -36,12 +36,6 @@ pub struct ServerState {
     pub oidc_client: OidcClient,
     pub client: reqwest::Client,
     pub key: Key,
-}
-
-impl FromRef<ServerState> for Key {
-    fn from_ref(state: &ServerState) -> Self {
-        state.key.clone()
-    }
 }
 
 #[cfg(not(feature = "test"))]

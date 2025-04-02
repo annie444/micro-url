@@ -6,6 +6,53 @@ set export := true
 kanidm_admin_password := "1B0MN71XrDsN7Y4M2ATgKyFCvaXJW2ZcLpLxQP4qG6bTrdyJ"
 kanidm_idm_admin_password := "0D6aHBMxWN6JdZRQ78JFqVjPk4GDC20EK6Wf8cPByahQZvcS"
 
+install:
+  #!/usr/bin/env bash
+  # Install rust
+  if ! command -v cargo &> /dev/null; then
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    source $HOME/.cargo/env
+  fi
+  # Install just
+  if ! command -v just &> /dev/null; then
+    cargo install just
+  fi
+  # Install sea-orm-cli
+  if ! command -v sea-orm-cli &> /dev/null; then
+    cargo install sea-orm-cli
+  fi
+  # Install shuttle
+  if ! command -v shuttle &> /dev/null; then
+    cargo install shuttle
+  fi
+  # Install kanidm
+  if ! command -v kanidm &> /dev/null; then
+    cargo install kanidm_tools
+  fi
+  # Install nvm
+  if ! command -v npm &> /dev/null; then
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
+    \. "$HOME/.nvm/nvm.sh"
+    nvm install
+  fi
+  # Install pnpm
+  if ! command -v pnpm &> /dev/null; then
+    curl -fsSL https://get.pnpm.io/install.sh | sh -
+  fi
+  # Install js dependencies
+  if [ -d ./node_modules ]; then
+    pnpm install
+  fi
+  # Ensure a container runtime is available
+  if ! command -v podman &> /dev/null && ! command -v docker &> /dev/null; then
+    >&2 echo "Unable to find either docker or podman. Please install one of these container runtimes"
+    >&2 echo ""
+    >&2 echo "Podman is the recommended container runtime. You can install podman from:"
+    >&2 echo "https://podman.io/getting-started/installation"
+    >&2 echo ""
+    >&2 echo "You do not need to re-run this script after installing a container runtime."
+  fi
+
 build:
   pnpm exec nx run-many --target=build
 
@@ -15,16 +62,66 @@ lint:
 test:
   pnpm exec nx run-many --target=test
 
-run:
-  export RUST_LOG=trace
+run $RUST_LOG="trace": kanidm-up
+  #!/usr/bin/env bash
+  set -eo pipefail
+  if [ -f ./Secrets.toml ]; then
+    cp Secrets.example.toml Secrets.toml
+  fi
   shuttle run
 
+reset-db:
+  just dev-db-stop
+  just dev-db
+  just migrate-up
+  just generate
+  just dev-db-stop
+
+kanidm-login:
+  kanidm login --username idm_admin --password "{{kanidm_idm_admin_password}}"
+
+kanidm *args:
+  kanidm {{args}}
+
 kanidm-up:
-  podman run --detach \
-    --name kanidm \
-    --publish 8443:8443 \
-    --volume ./kanidm:/data:rw \
-    docker.io/kanidm/server:latest
+  #!/usr/bin/env bash
+  set -eo pipefail
+  if command -v podman &> /dev/null; then
+    if ! podman container exists kanidm &> /dev/null; then
+      podman run --detach \
+        --name kanidm \
+        --publish 8443:8443 \
+        --volume ./kanidm:/data:rw \
+        docker.io/kanidm/server:latest
+    fi
+  elif command -v docker &> /dev/null; then
+    if ! docker container exists kanidm &> /dev/null; then
+      docker run --detach \
+        --name kanidm \
+        --publish 8443:8443 \
+        --volume ./kanidm:/data:rw \
+        docker.io/kanidm/server:latest
+    fi
+  else
+    >&2 echo "Unable to find either docker or podman"
+  fi
+
+kanidm-down:
+  #!/usr/bin/env bash
+  set -eo pipefail
+  if command -v podman &> /dev/null; then
+    if podman container exists kanidm &> /dev/null; then
+      podman stop kanidm
+      podman rm kanidm
+    fi
+  elif command -v docker &> /dev/null; then
+    if docker container exists kanidm &> /dev/null; then
+      docker stop kanidm
+      docker rm kanidm
+    fi
+  else
+    >&2 echo "Unable to find either docker or podman"
+  fi
 
 migrate-up:
   sea-orm-cli migrate up \
@@ -76,33 +173,42 @@ dev-db:
   echo 'DB_PORT="'${DB_PORT}'"' >> .env
   echo 'DB_NAME="'${DB_NAME}'"' >> .env
   if command -v podman &> /dev/null; then
-    podman run --detach \
-      --name dev-db \
-      --publish 5432:5432 \
-      --env POSTGRES_USER=${DB_USER} \
-      --env POSTGRES_PASSWORD=${DB_PASS} \
-      --env POSTGRES_DB=${DB_NAME} \
-      docker.io/library/postgres:latest
+    if ! podman container exists dev-db &> /dev/null; then
+      podman run --detach \
+        --name dev-db \
+        --publish 5432:5432 \
+        --env POSTGRES_USER=${DB_USER} \
+        --env POSTGRES_PASSWORD=${DB_PASS} \
+        --env POSTGRES_DB=${DB_NAME} \
+        docker.io/library/postgres:latest
+    fi
   elif command -v docker &> /dev/null; then
-    docker run --detach \
-      --name dev-db \
-      --publish 5432:5432 \
-      --env POSTGRES_USER=${DB_USER} \
-      --env POSTGRES_PASSWORD=${DB_PASS} \
-      --env POSTGRES_DB=${DB_NAME} \
-      docker.io/library/postgres:latest
+    if ! docker container exists dev-db &> /dev/null; then
+      docker run --detach \
+        --name dev-db \
+        --publish 5432:5432 \
+        --env POSTGRES_USER=${DB_USER} \
+        --env POSTGRES_PASSWORD=${DB_PASS} \
+        --env POSTGRES_DB=${DB_NAME} \
+        docker.io/library/postgres:latest
+    fi
   else
-    echo "Unable to find either docker or podman"
+    >&2 echo "Unable to find either docker or podman"
   fi
 
 dev-db-stop:
   #!/usr/bin/env bash
+  set -eo pipefail
   if command -v podman &> /dev/null; then
-    podman stop dev-db
-    podman rm dev-db
+    if podman container exists dev-db &> /dev/null; then
+      podman stop dev-db
+      podman rm dev-db
+    fi
   elif command -v docker &> /dev/null; then
-    docker stop dev-db
-    docker rm dev-db
+    if docker container exists dev-db &> /dev/null; then
+      docker stop dev-db
+      docker rm dev-db
+    fi
   else
-    echo "Unable to find either docker or podman"
+    >&2 echo "Unable to find either docker or podman"
   fi

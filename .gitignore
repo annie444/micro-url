@@ -64,3 +64,4 @@ kanidm.db*
 /target
 .shuttle*
 Secrets*.toml
+!Secrets.example.toml

@@ -107,13 +107,14 @@ pub async fn get_existing_url(
     Ok(link)
 }
 
+// /{id}
 #[instrument]
 #[debug_handler]
 pub async fn get_url(
     Path(id): Path<String>,
     State(mut state): State<ServerState>,
 ) -> Result<Redirect, ServerError> {
-    if id.starts_with("/api") || id.starts_with("/ui") {
+    if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
         return Ok(Redirect::permanent(&id));
     }
     let url = state.cache.get(&id);
@@ -132,7 +133,7 @@ pub async fn get_url(
     }
 }
 
-// /api/{id}
+// /api/url/delete/{id}
 #[instrument]
 #[debug_handler]
 pub async fn delete_url(
@@ -150,6 +151,8 @@ pub async fn delete_url(
     state.cache.pop(&id);
     Ok(StatusCode::OK)
 }
+
+// /api/url/update/{id}
 
 #[instrument]
 #[debug_handler]
@@ -177,6 +180,8 @@ pub async fn update_url(
 
     Ok(Json(short))
 }
+
+// /api/url/{id}
 
 #[instrument]
 #[debug_handler]
