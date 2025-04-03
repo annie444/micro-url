@@ -8,10 +8,26 @@ export function Footer() {
         <ul className="flex justify-center space-x-6 mt-4">
           <li>
             <a
-              href="https://github.com/micro-url"
-              className="hover:text-emerald-400"
+              href="https://github.com/annie444/micro-url"
+              className="hover:underline hover:text-emerald-400"
             >
               GitHub
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://github.com/annie444"
+              className="hover:underline hover:text-emerald-400"
+            >
+              Annie Ehler
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://github.com/kip-west"
+              className="hover:underline hover:text-emerald-400"
+            >
+              Kip West
             </a>
           </li>
         </ul>
