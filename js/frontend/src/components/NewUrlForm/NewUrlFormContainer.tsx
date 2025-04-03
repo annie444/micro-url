@@ -17,11 +17,10 @@ export function NewUrlFormContainer() {
       url: '',
       miniUrl: undefined,
     },
+    mode: 'onSubmit',
   })
 
-  const onSubmit: SubmitHandler<NewUrlFormSchema> = (
-    values: NewUrlFormSchema
-  ) => {
+  const onSubmit: SubmitHandler<NewUrlFormSchema> = (values) => {
     const { url, miniUrl } = values
     const response: Promise<{ data: { short_url: string } }> = new Promise(
       (resolve, reject) => {
