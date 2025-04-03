@@ -1,11 +1,11 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 // Component Imports
-import { NewUrlForm } from '@/components/NewUrlForm.tsx';
+import { NewUrlFormContainer } from '@/components/NewUrlForm';
 ---
 
 <Layout content={{ title: "MicroUrl" }}>
 	<div class="grid place-items-center h-screen content-center">
-		<NewUrlForm client:load />
+		<NewUrlFormContainer client:load />
 	</div>
 </Layout>
