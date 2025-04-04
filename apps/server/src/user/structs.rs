@@ -1,4 +1,4 @@
-use std::{num::TryFromIntError, sync::LazyLock};
+use std::num::TryFromIntError;
 
 use axum::{
     http::StatusCode,
@@ -14,19 +14,9 @@ use openidconnect::{
 };
 use sea_orm::{DerivePartialModel, FromQueryResult};
 use serde::{Deserialize, Serialize};
-use utoipa::{
-    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
-    IntoParams, IntoResponses, ToSchema,
-};
+use utoipa::{IntoParams, IntoResponses, ToSchema};
 
 use crate::structs::{BasicError, BasicResponse};
-
-pub static SECURITY: LazyLock<SecurityScheme> = LazyLock::new(|| {
-    SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::with_description(
-        "sid".to_string(),
-        "Session ID cookie".to_string(),
-    )))
-});
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct OidcName {
