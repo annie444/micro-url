@@ -2,14 +2,11 @@
 import Layout from '@/layouts/Layout.astro';
 // Component Imports
 import { NewUrlFormContainer } from '@/components/NewUrlForm';
-import { Footer } from '@/components/shared/Footer';
+import { Page } from '@/components/shared/Page';
 ---
 
 <Layout content={{ title: "MicroUrl" }}>
-	<div class="h-screen flex flex-col">
-		<div class="flex-grow grid place-items-center content-center">
-			<NewUrlFormContainer client:load />
-		</div>
-		<Footer />
-	</div>
+	<Page>
+		<NewUrlFormContainer client:load />
+	</Page>
 </Layout>
