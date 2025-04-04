@@ -1,0 +1,55 @@
+# Backend files
+*.rs @annie444
+Cargo.toml @annie444
+Secrets*toml @annie444
+*rust*toml @annie444
+
+# Version files
+.tool-versions @annie444 @kip-west
+.nvmrc @annie444 @kip-west
+.node-version @annie444 @kip-west
+
+# Frontend files
+*.js @kip-west
+*.ts @kip-west
+*.tsx @kip-west
+*.jsx @kip-west
+*.*css @kip-west
+*astro* @kip-west
+components.* @kip-west
+*tsconfig* @kip-west
+*prettier* @kip-west
+*eslint* @kip-west
+/js/frontend/package.json @kip-west
+/js/frontend/.gitignore @kip-west
+
+# Git files
+.github/* @annie444
+.gitignore @annie444 @kip-west
+.gitmodules @annie444 @kip-west
+
+# Assets
+*.png @kip-west @annie444
+*.jpg @kip-west @annie444
+*.jpeg @kip-west @annie444
+*.gif @kip-west @annie444
+*.svg @kip-west @annie444
+*.webp @kip-west @annie444
+*.ico @kip-west @annie444
+*.mp4 @kip-west @annie444
+*.mp3 @kip-west @annie444
+*.wav @kip-west @annie444
+*.ogg @kip-west @annie444
+*.flac @kip-west @annie444
+*.m4a @kip-west @annie444
+*.opus @kip-west @annie444
+*.webm @kip-west @annie444
+*.avif @kip-west @annie444
+*.tiff @kip-west @annie444
+*.bmp @kip-west @annie444
+
+# Other files
+justfile @annie444
+nx.json @annie444 @kip-west
+pnpm-workspace.yaml @kip-west
+/package.json @annie444 @kip-west
