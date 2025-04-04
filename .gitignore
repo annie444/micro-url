@@ -56,9 +56,9 @@ testem.log
 .DS_Store
 Thumbs.db
 
-/kanimd/kanidm.db*
-!/kanimd/kanidm.db
-!/kanimd/kanidm.db.klock
+/kanidm/kanidm.db*
+!/kanidm/kanidm.db
+!/kanidm/kanidm.db.klock
 
 .nx/cache
 .nx/workspace-data
