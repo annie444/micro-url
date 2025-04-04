@@ -1,12 +1,35 @@
 use axum::Router;
-use utoipa::OpenApi;
+use serde::Serialize;
+use utoipa::{
+    openapi,
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
 use utoipa_axum::{router::OpenApiRouter, routes};
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{state::ServerState, urls, user};
 
+#[derive(Debug, Serialize)]
+pub struct SecurityDef;
+
+impl Modify for SecurityDef {
+    fn modify(&self, openapi: &mut openapi::OpenApi) {
+        if let Some(schema) = openapi.components.as_mut() {
+            schema.add_security_scheme(
+                "session_id",
+                SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::with_description(
+                    "sid".to_string(),
+                    "Session ID cookie".to_string(),
+                ))),
+            );
+        }
+    }
+}
+
 #[derive(OpenApi)]
 #[openapi(
+    modifiers(&SecurityDef),
     tags(
         (name = urls::URL_TAG, description = "URL API routes"),
         (name = user::USER_TAG, description = "User API routes"),

@@ -18,6 +18,7 @@ tokio.workspace = true
 utoipa.workspace = true
 utoipa-axum.workspace = true
 axum.workspace = true
+utoipa-swagger-ui.workspace = true
 tower = { version = '0.5.2', features = ['full'] }
 tower-http = { version = '0.6.2', features = ['full', 'trace'] }
 shuttle-axum = { version = "0.53.0", default-features = false, features = [
@@ -51,10 +52,6 @@ url = { version = "2.5.4", features = ["serde"] }
 time = "0.3.41"
 openidconnect = { version = "4", features = ["native-tls", "reqwest"] }
 argon2 = { version = "0.5", features = ["std"] }
-utoipa-swagger-ui = { version = "9.0", features = ["axum", "debug", "reqwest"] }
 
 [features]
 test = ["sea-orm/mock"]
-
-[package.metadata.patch]
-crates = ["utoipa-swagger-ui"]

@@ -18,7 +18,7 @@ use crate::state::ServerState;
     context_path = super::USER_PREFIX,
     responses(LogoutResponse),
     tags = [super::LOCAL_TAG, super::OIDC_TAG],
-    security(("sid" = []))
+    security(("session_id" = []))
 )]
 pub async fn logout(
     jar: PrivateCookieJar,
@@ -61,7 +61,7 @@ pub async fn logout(
     context_path = super::USER_PREFIX,
     responses(UserProfileResponse),
     tag = super::USER_TAG,
-    security(("sid" = []))
+    security(("session_id" = []))
 )]
 pub async fn get_user(
     jar: PrivateCookieJar,
@@ -98,7 +98,7 @@ pub async fn get_user(
     context_path = super::USER_PREFIX,
     responses(UserLinksResponse),
     tag = super::USER_TAG,
-    security(("sid" = [])),
+    security(("session_id" = [])),
 )]
 pub async fn get_user_urls(
     jar: PrivateCookieJar,
