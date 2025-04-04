@@ -15,7 +15,7 @@
   },
   "packageManager": "pnpm@9.6.0",
   "devDependencies": {
-    "@nx/workspace": "20.6.4",
+    "@nx/workspace": "20.7.1",
     "nx": "20.6.4"
   },
   "dependencies": {
