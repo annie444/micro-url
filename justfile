@@ -65,7 +65,7 @@ test:
 run $RUST_LOG="trace": kanidm-up
   #!/usr/bin/env bash
   set -eo pipefail
-  if [ -f ./Secrets.toml ]; then
+  if [ ! -f ./Secrets.toml ]; then
     cp Secrets.example.toml Secrets.toml
   fi
   shuttle run
@@ -153,7 +153,8 @@ generate:
     --include-hidden-tables \
     --with-serde=both \
     --serde-skip-hidden-column \
-    --date-time-crate=chrono
+    --date-time-crate=chrono \
+    --model-extra-derives "utoipa::ToSchema"
 
 dev-db:
   #!/usr/bin/env bash

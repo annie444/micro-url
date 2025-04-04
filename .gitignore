@@ -56,9 +56,6 @@ testem.log
 .DS_Store
 Thumbs.db
 
-kanidm.db*
-!kanidm.db
-
 .nx/cache
 .nx/workspace-data
 /target

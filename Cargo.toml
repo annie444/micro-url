@@ -1,7 +1,12 @@
-
 [workspace]
 resolver = '2'
-members = ['apps/server', 'libs/migration', 'libs/entity', 'apps/micro_url']
+members = [
+	'apps/server',
+	'libs/migration',
+	'libs/entity',
+	'apps/micro_url',
+	'target/patch/utoipa-swagger-ui-9.0.0',
+]
 
 [workspace.dependencies]
 axum = { version = "0.8", features = [
@@ -15,6 +20,22 @@ axum = { version = "0.8", features = [
 	'query',
 ] }
 tokio = { version = "1", features = ["full"] }
+utoipa = { version = "5.3", features = [
+	"axum_extras",
+	"auto_into_responses",
+	"chrono",
+	"config",
+	"debug",
+	"indexmap",
+	"openapi_extensions",
+	"preserve_order",
+	"preserve_path_order",
+	"rc_schema",
+	"ulid",
+	"url",
+	"uuid",
+] }
+utoipa-axum = { version = "0.2", features = ["debug"] }
 
 sea-orm = { version = '1.1.7', features = [
 	'runtime-tokio-native-tls',
@@ -35,3 +56,6 @@ serde_json = '1'
 
 [profile.release]
 lto = true
+
+[patch.crates-io]
+utoipa-swagger-ui = { path = "./target/patch/utoipa-swagger-ui-9.0.0" }

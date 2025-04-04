@@ -12,11 +12,11 @@ impl MigrationTrait for Migration {
                     .table(ShortLink::Table)
                     .if_not_exists()
                     .col(pk_auto(ShortLink::Id))
-                    .col(string_uniq(ShortLink::Url))
-                    .col(string_uniq(ShortLink::ShortUrl))
+                    .col(string(ShortLink::Url).unique_key())
+                    .col(string(ShortLink::ShortUrl).unique_key())
                     .col(string(ShortLink::OriginalUrl))
                     .col(uuid_null(ShortLink::UserId))
-                    .col(timestamp_with_time_zone_null(ShortLink::ExpiryDate))
+                    .col(timestamp_null(ShortLink::ExpiryDate))
                     .col(big_unsigned(ShortLink::Views).default(0))
                     .col(timestamp(ShortLink::CreatedAt))
                     .col(timestamp(ShortLink::UpdatedAt))
@@ -30,7 +30,7 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_uuid(User::UserId))
                     .col(string(User::Name))
-                    .col(string_uniq(User::Email))
+                    .col(string(User::Email).unique_key())
                     .col(timestamp(User::CreatedAt))
                     .col(timestamp(User::UpdatedAt))
                     .to_owned(),
@@ -92,6 +92,15 @@ impl MigrationTrait for Migration {
                     .table(ShortLink::Table)
                     .name(ShortLinkIdx::ExpiryDate)
                     .col(ShortLink::ExpiryDate)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_index(
+                Index::create()
+                    .table(Sessions::Table)
+                    .name(SessionsIdx::SessionId)
+                    .col(Sessions::SessionId)
                     .to_owned(),
             )
             .await?;
@@ -164,6 +173,14 @@ impl MigrationTrait for Migration {
             )
             .await?;
         manager
+            .drop_index(
+                Index::drop()
+                    .table(Sessions::Table)
+                    .name(SessionsIdx::SessionId)
+                    .to_owned(),
+            )
+            .await?;
+        manager
             .drop_foreign_key(
                 ForeignKey::drop()
                     .table(ShortLink::Table)
@@ -224,6 +241,20 @@ enum UserPassFk {
     UserId,
 }
 
+impl ToString for UserPassFk {
+    fn to_string(&self) -> String {
+        match self {
+            Self::UserId => "fk_user_id".to_owned(),
+        }
+    }
+}
+
+impl From<UserPassFk> for String {
+    fn from(fk: UserPassFk) -> Self {
+        fk.to_string()
+    }
+}
+
 #[derive(DeriveIden)]
 enum Sessions {
     Table,
@@ -231,6 +262,24 @@ enum Sessions {
     SessionId,
     UserId,
     Expiry,
+}
+
+enum SessionsIdx {
+    SessionId,
+}
+
+impl ToString for SessionsIdx {
+    fn to_string(&self) -> String {
+        match self {
+            Self::SessionId => "idx_session_id".to_owned(),
+        }
+    }
+}
+
+impl From<SessionsIdx> for String {
+    fn from(idx: SessionsIdx) -> Self {
+        idx.to_string()
+    }
 }
 
 enum SessionsFk {
@@ -247,20 +296,6 @@ impl ToString for SessionsFk {
 
 impl From<SessionsFk> for String {
     fn from(fk: SessionsFk) -> Self {
-        fk.to_string()
-    }
-}
-
-impl ToString for UserPassFk {
-    fn to_string(&self) -> String {
-        match self {
-            Self::UserId => "fk_user_id".to_owned(),
-        }
-    }
-}
-
-impl From<UserPassFk> for String {
-    fn from(fk: UserPassFk) -> Self {
         fk.to_string()
     }
 }

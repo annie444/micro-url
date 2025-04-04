@@ -14,3 +14,5 @@ sea-orm.workspace = true
 serde.workspace = true
 chrono.workspace = true
 serde_json.workspace = true
+utoipa.workspace = true
+utoipa-axum.workspace = true

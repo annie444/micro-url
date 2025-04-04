@@ -3,7 +3,9 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
+#[derive(
+    Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, utoipa::ToSchema,
+)]
 #[sea_orm(table_name = "short_link")]
 pub struct Model {
     #[sea_orm(primary_key)]
@@ -14,7 +16,7 @@ pub struct Model {
     pub short_url: String,
     pub original_url: String,
     pub user_id: Option<Uuid>,
-    pub expiry_date: Option<DateTimeWithTimeZone>,
+    pub expiry_date: Option<DateTime>,
     pub views: i64,
     pub created_at: DateTime,
     pub updated_at: DateTime,
