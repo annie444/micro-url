@@ -1,0 +1,18 @@
+---
+import { Footer } from '@/components/shared/Footer'
+import classNames from 'classnames'
+---
+
+<div class={classNames('h-screen', 'grid grid-rows-[1fr_auto]')}>
+  <div
+    class={classNames(
+      'container mx-auto',
+      'w-full max-w-4xl',
+      'grid content-center',
+      'p-4'
+    )}
+  >
+    <slot />
+  </div>
+  <Footer />
+</div>
