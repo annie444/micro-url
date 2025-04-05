@@ -51,6 +51,7 @@ export class ToastHelper {
         description,
         ...baseOptions,
         ...options,
+        duration: undefined,
         position: 'bottom-center',
       })
     },
