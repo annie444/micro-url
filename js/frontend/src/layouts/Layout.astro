@@ -16,10 +16,8 @@ import { Toaster } from '@/components/ui/sonner'
 		<title>{content.title}</title>
 	</head>
 	<body class="h-screen grid grid-rows-[1fr_auto]">
-		<Main class="relative">
-			<slot />
-			<Toaster client:load className="!bottom-36"/>
-		</Main>
+		<Main />
 		<Footer />
+		<Toaster client:load className="!bottom-36"/>
 	</body>
 </html>
