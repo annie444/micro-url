@@ -1,14 +1,11 @@
-'use client'
-
 import axios from 'axios'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { FormProvider, useForm, type SubmitHandler } from 'react-hook-form'
-import { toast } from 'sonner'
 
-import { Toaster } from '@/components/ui/sonner'
 import { Button } from '@/components/ui/button'
 import { newUrlFormSchema, type NewUrlFormSchema } from './NewUrlFormSchema'
 import { NewUrlForm } from './NewUrlForm'
+import { ToastHelper } from '@/helpers/toastHelper'
 
 export function NewUrlFormContainer() {
   const formMethods = useForm<NewUrlFormSchema>({
@@ -37,41 +34,27 @@ export function NewUrlFormContainer() {
           })
       }
     )
-    toast.promise(response, {
-      success: (res) => {
-        return {
-          message: 'URL shortened successfully!',
-          description: 'Your shortened URL is: ' + res.data.short_url,
-          closeButton: true,
-          dismissible: true,
-          duration: 10000,
-          action: (
-            <Button
-              onClick={() => navigator.clipboard.writeText(res.data.short_url)}
-            >
-              Copy
-            </Button>
-          ),
-        }
-      },
-      error: (err) => {
-        console.log(err)
-        return {
-          message: 'Error shortening URL',
-          closeButton: true,
-          dismissible: true,
-          duration: 10000,
-        }
+    ToastHelper.notifyWithPromise({
+      response,
+      successMessage: 'URL shortened successfully!',
+      errorMessage: 'Error shortening URL',
+      successDescription: (res) =>
+        'Your shortened URL is: ' + res.data.short_url,
+      successAction: (res) => {
+        return (
+          <Button
+            onClick={() => navigator.clipboard.writeText(res.data.short_url)}
+          >
+            Copy
+          </Button>
+        )
       },
     })
   }
 
   return (
-    <>
-      <FormProvider {...formMethods}>
-        <NewUrlForm handleSubmit={formMethods.handleSubmit(onSubmit)} />
-      </FormProvider>
-      <Toaster />
-    </>
+    <FormProvider {...formMethods}>
+      <NewUrlForm handleSubmit={formMethods.handleSubmit(onSubmit)} />
+    </FormProvider>
   )
 }
