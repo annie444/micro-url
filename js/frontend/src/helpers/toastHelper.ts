@@ -2,8 +2,15 @@ import type { ReactNode } from 'react'
 import { toast, type Action, type ExternalToast } from 'sonner'
 
 const baseOptions: ExternalToast = {
-  duration: 4000,
+  closeButton: true,
   dismissible: true,
+  duration: 10000,
+}
+
+type NotifyProps = {
+  message: string
+  description: string
+  options?: ExternalToast
 }
 
 type WithPromiseArgs<T> = {
@@ -16,25 +23,36 @@ type WithPromiseArgs<T> = {
 
 export class ToastHelper {
   static notify = {
-    success(message: string, description?: string) {
+    success({ message, description, options }: NotifyProps) {
       toast.success(message, {
         description,
         ...baseOptions,
+        ...options,
         className: 'bg-green-100 text-green-800',
       })
     },
-    error(message: string, description?: string) {
+    error({ message, description, options }: NotifyProps) {
       toast.error(message, {
         description,
         ...baseOptions,
+        ...options,
         className: 'bg-red-100 text-red-800',
       })
     },
-    info(message: string, description?: string) {
-      toast.info(message, { description, ...baseOptions })
+    info({ message, description, options }: NotifyProps) {
+      toast.info(message, {
+        description,
+        ...baseOptions,
+        ...options,
+      })
     },
-    global(message: string, description?: string) {
-      toast(message, { description, ...baseOptions, position: 'bottom-center' })
+    global({ message, description, options }: NotifyProps) {
+      toast(message, {
+        description,
+        ...baseOptions,
+        ...options,
+        position: 'bottom-center',
+      })
     },
   }
 
@@ -54,9 +72,7 @@ export class ToastHelper {
               ? successDescription
               : successDescription(res)
             : undefined,
-          closeButton: true,
-          dismissible: true,
-          duration: 10000,
+          ...baseOptions,
           action: successAction ? successAction(res) : undefined,
         }
       },
@@ -64,9 +80,7 @@ export class ToastHelper {
         console.log(err)
         return {
           message: errorMessage,
-          closeButton: true,
-          dismissible: true,
-          duration: 10000,
+          ...baseOptions,
         }
       },
     })

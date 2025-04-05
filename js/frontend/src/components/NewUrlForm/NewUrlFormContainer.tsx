@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { newUrlFormSchema, type NewUrlFormSchema } from './NewUrlFormSchema'
 import { NewUrlForm } from './NewUrlForm'
 import { ToastHelper } from '@/helpers/toastHelper'
+import { useEffect } from 'react'
+import { LocalStorageHelper } from '@/helpers/localStorageHelper'
 
 export function NewUrlFormContainer() {
   const formMethods = useForm<NewUrlFormSchema>({
@@ -51,6 +53,21 @@ export function NewUrlFormContainer() {
       },
     })
   }
+
+  useEffect(() => {
+    if (!LocalStorageHelper.getItem('hasDismissedWelcomeToast')) {
+      ToastHelper.notify.global({
+        message: 'Welcome to MicroUrl!',
+        description:
+          "We use cookies for authentication purposes which fall under the realm of “necessary functionality” and therefore can't be removed.",
+        options: {
+          onDismiss: () => {
+            LocalStorageHelper.setItem('hasDismissedWelcomeToast', 'true')
+          },
+        },
+      })
+    }
+  }, [])
 
   return (
     <FormProvider {...formMethods}>
