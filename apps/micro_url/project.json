@@ -7,9 +7,7 @@
     "build": {
       "cache": true,
       "executor": "@monodon/rust:build",
-      "outputs": [
-        "{options.target-dir}"
-      ],
+      "outputs": ["{options.target-dir}"],
       "options": {
         "target-dir": "dist/target/micro_url"
       },
@@ -22,9 +20,7 @@
     "build-dev": {
       "cache": true,
       "executor": "@monodon/rust:build",
-      "outputs": [
-        "{options.target-dir}"
-      ],
+      "outputs": ["{options.target-dir}"],
       "options": {
         "target-dir": "dist/target/micro_url"
       },
@@ -37,9 +33,7 @@
     "test": {
       "cache": true,
       "executor": "@monodon/rust:test",
-      "outputs": [
-        "{options.target-dir}"
-      ],
+      "outputs": ["{options.target-dir}"],
       "options": {
         "target-dir": "dist/target/micro_url"
       },
@@ -52,18 +46,14 @@
     "lint": {
       "cache": true,
       "executor": "@monodon/rust:lint",
-      "outputs": [
-        "{options.target-dir}"
-      ],
+      "outputs": ["{options.target-dir}"],
       "options": {
         "target-dir": "dist/target/micro_url"
       }
     },
     "run": {
       "executor": "@monodon/rust:run",
-      "outputs": [
-        "{options.target-dir}"
-      ],
+      "outputs": ["{options.target-dir}"],
       "options": {
         "target-dir": "dist/target/micro_url"
       },
