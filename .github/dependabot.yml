@@ -1,0 +1,78 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    commit-message:
+      prefix: 'chore(deps): '
+    directories:
+      - /
+      - /js/frontend
+    schedule:
+      interval: daily
+    groups:
+      prod-security-fix:
+        applies-to: security-updates
+        dependency-type: production
+      dev-security-fix:
+        applies-to: security-updates
+        dependency-type: development
+      dev-version-updates:
+        applies-to: version-updates
+        dependency-type: development
+      prod-version-updates:
+        applies-to: version-updates
+        dependency-type: production
+    labels:
+      - dependencies
+      - javascript
+      - fix
+    open-pull-requests-limit: 3
+    pull-request-branch-name:
+      separator: '/'
+    versioning-strategy: increase-if-necessary
+
+  - package-ecosystem: cargo
+    commit-message:
+      prefix: 'Fix(dependencies): '
+    directories:
+      - /
+      - /apps/micro_url
+      - /apps/server
+      - /libs/entity
+      - /libs/migration
+    schedule:
+      interval: daily
+    groups:
+      prod-security-fix:
+        applies-to: security-updates
+        dependency-type: production
+      dev-security-fix:
+        applies-to: security-updates
+        dependency-type: development
+      dev-version-updates:
+        applies-to: version-updates
+        dependency-type: development
+      prod-version-updates:
+        applies-to: version-updates
+        dependency-type: production
+    labels:
+      - dependencies
+      - cargo
+      - fix
+    open-pull-requests-limit: 3
+    pull-request-branch-name:
+      separator: '/'
+    versioning-strategy: increase-if-necessary
+
+  - package-ecosystem: github-actions
+    commit-message:
+      prefix: 'chore(deps): '
+    directory: '/'
+    schedule:
+      interval: weekly
+    labels:
+      - workflows
+      - fix
+    open-pull-requests-limit: 3
+    pull-request-branch-name:
+      separator: '/'

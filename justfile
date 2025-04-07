@@ -29,6 +29,13 @@ install:
   if ! command -v kanidm &> /dev/null; then
     cargo install kanidm_tools
   fi
+  # Install git-cliff
+  if ! command -v cog &> /dev/null; then
+    cargo install cocogitto
+  fi
+  if ! command -v version &> /dev/null; then
+    cargo install version-manager
+  fi
   # Install nvm
   if ! command -v npm &> /dev/null; then
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
