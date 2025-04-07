@@ -19,8 +19,6 @@ jobs:
           fetch-depth: 0
       - uses: pnpm/action-setup@v4
 
-      - run: pnpm dlx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after=lint,build,test
-
       - run: pnpm install --frozen-lockfile
 
       - uses: actions/setup-node@v4
