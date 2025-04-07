@@ -18,15 +18,18 @@ jobs:
         with:
           fetch-depth: 0
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.node-version'
-          cache: 'pnpm'
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - run: pnpm dlx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after=lint,build,test
 
       - run: pnpm install --frozen-lockfile
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
       - uses: nrwl/nx-set-shas@v4
 
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
