@@ -19,6 +19,21 @@
         }
       }
     },
+    "build-dev": {
+      "cache": true,
+      "executor": "@monodon/rust:build",
+      "outputs": [
+        "{options.target-dir}"
+      ],
+      "options": {
+        "target-dir": "dist/target/server"
+      },
+      "configurations": {
+        "production": {
+          "release": false
+        }
+      }
+    },
     "test": {
       "cache": true,
       "executor": "@monodon/rust:test",

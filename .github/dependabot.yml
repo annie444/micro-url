@@ -3,8 +3,7 @@ version: 2
 updates:
   - package-ecosystem: npm
     commit-message:
-      prefix: 'Fix(dependencies): '
-      prefix-development: 'Fix(dependencies): '
+      prefix: 'chore(deps): '
     directories:
       - /
       - /js/frontend
@@ -67,7 +66,7 @@ updates:
 
   - package-ecosystem: github-actions
     commit-message:
-      prefix: 'Fix(workflows): '
+      prefix: 'chore(deps): '
     directory: '/'
     schedule:
       interval: weekly

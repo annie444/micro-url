@@ -1,0 +1,77 @@
+from_latest_tag = false
+ignore_merge_commits = false
+ignore_fixup_commits = true
+disable_changelog = false
+disable_bump_commit = false
+generate_mono_repository_global_tag = true
+generate_mono_repository_package_tags = true
+branch_whitelist = []
+skip_ci = "[skip ci]"
+skip_untracked = false
+pre_bump_hooks = [
+  "pnpm exec nx run-many --target=test",
+  "pnpm exec nx run-many --target=build",
+]
+post_bump_hooks = []
+pre_package_bump_hooks = ["version package {{package}} set {{version|0.1.0}}"]
+post_package_bump_hooks = []
+monorepo_version_separator = "."
+
+[git_hooks.commit-msg]
+script = """#!/bin/sh
+set -e
+cog verify --file $1
+cog check
+"""
+
+[git_hooks.pre-commit]
+script = """#!/bin/sh
+set -e
+pnpm exec nx format:write
+pnpm exec nx run-many --target=format
+pnpm exec nx run-many --target=lint
+"""
+
+[commit_types]
+
+[changelog]
+template = "remote"
+path = "CHANGELOG.md"
+authors = [
+  { signature = "annie.ehler.4@gmail.com", username = "annie444" },
+  { signature = "annie.ehler.4@proton.me", username = "annie444" },
+  { signature = "kip.west.dev@gmail.com", username = "kip-west" },
+]
+remote = "github.com"
+owner = "annie444"
+repository = "micro-url"
+
+[packages.server]
+path = "apps/server"
+changelog_path = "CHANGELOG.md"
+public_api = true
+bump_order = 4
+
+[packages.frontend]
+path = "js/frontend"
+changelog_path = "CHANGELOG.md"
+public_api = true
+bump_order = 1
+
+[packages.micro-url]
+path = "apps/micro-url"
+changelog_path = "CHANGELOG.md"
+public_api = true
+bump_order = 5
+
+[packages.migration]
+path = "libs/migration"
+changelog_path = "CHANGELOG.md"
+public_api = false
+bump_order = 2
+
+[packages.entity]
+path = "libs/entity"
+changelog_path = "CHANGELOG.md"
+public_api = false
+bump_order = 3
