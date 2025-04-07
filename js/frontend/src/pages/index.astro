@@ -1,12 +1,9 @@
 ---
 import Layout from '@/layouts/Layout.astro';
-import Page from '@/layouts/Page.astro';
 // Component Imports
 import { NewUrlFormContainer } from '@/components/NewUrlForm';
 ---
 
 <Layout content={{ title: "MicroUrl" }}>
-	<Page>
-		<NewUrlFormContainer client:load />
-	</Page>
+	<NewUrlFormContainer client:load />
 </Layout>
