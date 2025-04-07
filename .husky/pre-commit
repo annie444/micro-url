@@ -1,3 +1,0 @@
-pnpm exec nx format:write
-pnpm exec nx run-many --target=format
-pnpm exec nx run-many --target=lint
