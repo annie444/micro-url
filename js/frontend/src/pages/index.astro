@@ -5,7 +5,5 @@ import { NewUrlForm } from '@/components/NewUrlForm.tsx';
 ---
 
 <Layout content={{ title: "MicroUrl" }}>
-	<div class="grid place-items-center h-screen content-center">
-		<NewUrlForm client:load />
-	</div>
+	<NewUrlFormContainer client:load />
 </Layout>
