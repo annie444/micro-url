@@ -10,7 +10,7 @@ import { useEffect } from 'react'
 import { LocalStorageHelper } from '@/helpers/localStorageHelper'
 
 export function NewUrlFormContainer() {
-  const formMethods = useForm<NewUrlFormSchema>({
+  const formMethods = useForm < NewUrlFormSchema > ({
     resolver: zodResolver(newUrlFormSchema),
     defaultValues: {
       url: '',
