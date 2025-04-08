@@ -1,9 +1,21 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "release": {
+    "releaseTagPattern": "release/v{version}",
+    "git": {
+      "commitMessage": "chore(release): v{version}"
+    }
+  },
   "targetDefaults": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["{projectRoot}/dist"],
+      "cache": true
+    },
+    "lint": {
+      "cache": true
+    },
+    "test": {
       "cache": true
     }
   },

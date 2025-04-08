@@ -1,2 +1,6 @@
 packages:
-  - 'js/*'
+  - js/*
+onlyBuiltDependencies:
+  - esbuild
+  - nx
+  - sharp
