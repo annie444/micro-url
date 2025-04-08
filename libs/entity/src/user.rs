@@ -4,10 +4,20 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(
-    Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, utoipa :: ToSchema,
+    Clone,
+    Debug,
+    PartialEq,
+    DeriveEntityModel,
+    Eq,
+    Serialize,
+    Deserialize,
+    utoipa :: ToSchema,
+    ts_rs :: TS,
 )]
 #[sea_orm(table_name = "user")]
-#[typeshare::typeshare]
+#[ts(export)]
+#[ts(export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(rename = "User")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub user_id: Uuid,

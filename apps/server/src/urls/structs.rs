@@ -1,19 +1,19 @@
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Redirect, Response},
-    Json,
 };
 use chrono::NaiveDateTime;
 use entity::short_link;
 use serde::{Deserialize, Serialize};
-use typeshare::typeshare;
+use ts_rs::TS;
 use utoipa::{IntoResponses, ToSchema};
 use uuid::Uuid;
 
 use crate::structs::BasicError;
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct NewUrlRequest {
     pub url: String,
     pub short: Option<String>,
@@ -21,8 +21,9 @@ pub struct NewUrlRequest {
     pub expiry: Option<NaiveDateTime>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub enum NewUrlResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     UrlParseError(#[to_schema] BasicError),
@@ -53,8 +54,9 @@ impl IntoResponse for NewUrlResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub enum GetExistingUrlError {
     #[response(status = StatusCode::BAD_REQUEST)]
     UrlNotFound,
@@ -112,8 +114,9 @@ impl From<url::ParseError> for NewUrlResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub enum DeleteUrlResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),
@@ -155,8 +158,9 @@ impl From<sea_orm::DbErr> for DeleteUrlResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub enum UpdateUrlResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     UrlParseError(#[to_schema] BasicError),
@@ -205,8 +209,9 @@ impl From<url::ParseError> for UpdateUrlResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub enum GetUrlResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),
@@ -242,8 +247,9 @@ impl From<sea_orm::DbErr> for GetUrlResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub enum GetUrlInfoResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),

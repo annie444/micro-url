@@ -20,7 +20,7 @@ utoipa.workspace = true
 utoipa-axum.workspace = true
 axum.workspace = true
 utoipa-swagger-ui.workspace = true
-typeshare.workspace = true
+ts-rs.workspace = true
 tower = { version = '0.5.2', features = ['full'] }
 tower-http = { version = '0.6.2', features = ['full', 'trace'] }
 shuttle-axum = { version = "0.53.0", default-features = false, features = [

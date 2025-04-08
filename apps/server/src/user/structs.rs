@@ -1,32 +1,33 @@
 use std::num::TryFromIntError;
 
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Redirect, Response},
-    Json,
 };
 use axum_extra::extract::cookie::PrivateCookieJar;
 use entity::{short_link, user};
 use openidconnect::{
-    core::CoreErrorResponseType, ClaimsVerificationError, ConfigurationError, HttpClientError,
-    RequestTokenError, SignatureVerificationError, SigningError, StandardErrorResponse,
-    UserInfoError,
+    ClaimsVerificationError, ConfigurationError, HttpClientError, RequestTokenError,
+    SignatureVerificationError, SigningError, StandardErrorResponse, UserInfoError,
+    core::CoreErrorResponseType,
 };
 use sea_orm::{DerivePartialModel, FromQueryResult};
 use serde::{Deserialize, Serialize};
-use typeshare::typeshare;
+use ts_rs::TS;
 use utoipa::{IntoParams, IntoResponses, ToSchema};
 
 use crate::structs::{BasicError, BasicResponse};
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct OidcName {
     pub name: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub enum OidcNameResponse {
     #[response(status = StatusCode::OK)]
     OidcName(#[to_schema] OidcName),
@@ -40,17 +41,18 @@ impl IntoResponse for OidcNameResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct NewUserRequest {
     pub name: String,
     pub email: String,
     pub password: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
+#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
 #[allow(clippy::large_enum_variant)]
-#[typeshare]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub enum NewUserResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     UserAlreadyExists(#[to_schema] BasicError),
@@ -91,16 +93,26 @@ impl From<sea_orm::DbErr> for NewUserResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[allow(clippy::large_enum_variant)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+pub enum LoginResponseType {
+    InvalidCredentials(BasicError),
+    DatabaseError(BasicError),
+    UserLoggedIn(user::Model),
+    InternalServerError(BasicError),
+}
+
 #[derive(Debug, Clone, IntoResponses)]
 #[allow(clippy::large_enum_variant)]
-#[typeshare]
 pub enum LoginResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     InvalidCredentials(#[to_schema] BasicError),
@@ -143,9 +155,19 @@ impl From<argon2::password_hash::Error> for LoginResponse {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+pub enum LogoutResponseType {
+    InvalidSession(BasicError),
+    DatabaseError(BasicError),
+    UserLoggedOut(BasicResponse),
+    UserNotLoggedIn(BasicResponse),
+    SessionNotFound(BasicError),
+}
+
 #[derive(Debug, Clone, IntoResponses)]
 #[allow(clippy::large_enum_variant)]
-#[typeshare]
 pub enum LogoutResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     InvalidSession(#[to_schema] BasicError),
@@ -183,16 +205,19 @@ impl From<sea_orm::DbErr> for LogoutResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DerivePartialModel, FromQueryResult)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, ToSchema, DerivePartialModel, FromQueryResult, TS,
+)]
 #[sea_orm(entity = "user::Entity")]
-#[typeshare]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct UserProfile {
     pub name: String,
     pub email: String,
 }
 
-#[derive(Debug, Clone, IntoResponses)]
-#[typeshare]
+#[derive(Debug, Clone, IntoResponses, Serialize, Deserialize, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub enum UserProfileResponse {
     #[response(status = StatusCode::UNAUTHORIZED)]
     InvalidSession(#[to_schema] BasicError),
@@ -224,14 +249,15 @@ impl IntoResponse for UserProfileResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct UserLinks {
     pub urls: Vec<short_link::Model>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub enum UserLinksResponse {
     #[response(status = StatusCode::UNAUTHORIZED)]
     InvalidSession(#[to_schema] BasicError),
@@ -261,8 +287,26 @@ impl IntoResponse for UserLinksResponse {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+pub enum OidcCallbackResponseType {
+    InvalidCsrfToken(BasicError),
+    InvalidClaims(BasicError),
+    InvalidOidcConfig(BasicError),
+    InvalidSignature(BasicError),
+    UserInfoError(BasicError),
+    SignatureError(BasicError),
+    IntegerParseError(BasicError),
+    OptionError(BasicError),
+    DatabaseError(BasicError),
+    OidcCallback(BasicResponse),
+    CookieNotFound(BasicError),
+    TokenError(BasicError),
+    InternalError(BasicError),
+}
+
 #[derive(Debug, Clone, IntoResponses)]
-#[typeshare]
 pub enum OidcCallbackResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     InvalidCsrfToken(#[to_schema] BasicError),
@@ -398,8 +442,13 @@ impl From<sea_orm::DbErr> for OidcCallbackResponse {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum OidcLoginResponseType {
+    OidcLogin(String),
+}
+
 #[derive(Debug, Clone, IntoResponses)]
-#[typeshare]
 pub enum OidcLoginResponse {
     #[response(status = StatusCode::TEMPORARY_REDIRECT)]
     OidcLogin(#[to_schema] String, PrivateCookieJar),
@@ -416,7 +465,6 @@ impl IntoResponse for OidcLoginResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoParams)]
-#[typeshare]
 pub struct AuthRequest {
     pub code: String,
     pub state: String,

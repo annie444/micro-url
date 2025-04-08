@@ -1,19 +1,19 @@
 use openidconnect::{
+    Client, EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet,
+    EndpointSet, IdTokenFields, RevocationErrorResponseType, StandardErrorResponse,
+    StandardTokenIntrospectionResponse, StandardTokenResponse,
     core::{
         CoreAuthDisplay, CoreAuthPrompt, CoreErrorResponseType, CoreGenderClaim, CoreJsonWebKey,
         CoreJweContentEncryptionAlgorithm, CoreJwsSigningAlgorithm, CoreRevocableToken,
         CoreTokenType,
     },
-    Client, EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet,
-    EndpointSet, IdTokenFields, RevocationErrorResponseType, StandardErrorResponse,
-    StandardTokenIntrospectionResponse, StandardTokenResponse,
 };
 use serde::{Deserialize, Serialize};
-use typeshare::typeshare;
+use ts_rs::TS;
 use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct BasicError {
     pub error: String,
 }
@@ -32,8 +32,8 @@ impl From<&str> for BasicError {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct BasicResponse {
     pub message: String,
 }
@@ -52,15 +52,15 @@ impl From<&str> for BasicResponse {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct AuthUrl {
     pub url: String,
     pub name: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct AuthUrls(pub Vec<AuthUrl>); // New struct to hold a vector of AuthUrl
 
 pub type OidcClient = Client<
