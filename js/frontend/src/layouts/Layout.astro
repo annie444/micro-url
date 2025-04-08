@@ -2,7 +2,7 @@
 import '../styles/global.css';
 import favicon from '../assets/favicon.svg';
 const { content } = Astro.props;
-import classNames from 'classnames';
+import { cn } from '@/lib/utils'
 
 import { Footer } from '@/components/shared/Footer'
 import { Toaster } from '@/components/ui/sonner'
@@ -18,7 +18,7 @@ import { Toaster } from '@/components/ui/sonner'
 	</head>
 	<body class="h-screen grid grid-rows-[1fr_auto]">
 		<main
-			class={classNames(
+			class={cn(
 				'container mx-auto',
 				'w-full max-w-4xl',
 				'grid content-center',
