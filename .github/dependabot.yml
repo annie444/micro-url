@@ -62,7 +62,7 @@ updates:
     open-pull-requests-limit: 3
     pull-request-branch-name:
       separator: "/"
-    versioning-strategy: increase-if-necessary
+    versioning-strategy: auto
 
   - package-ecosystem: github-actions
     commit-message:
