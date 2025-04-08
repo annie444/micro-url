@@ -10,16 +10,16 @@ pub mod user;
 use std::{
     env::current_dir,
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicU64, Ordering},
     },
 };
 
 use axum::{
+    Router,
     http::{HeaderName, Request},
     response::Redirect,
     routing::get,
-    Router,
 };
 pub use config::ServerConfig;
 use logger::{init_subscriber, telemetry};

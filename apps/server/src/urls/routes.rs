@@ -1,10 +1,9 @@
 use axum::{
-    debug_handler,
+    Json, debug_handler,
     extract::{Path, State},
-    Json,
 };
 use entity::short_link;
-use sea_orm::{entity::*, query::*, DatabaseConnection, DbErr, RuntimeErr};
+use sea_orm::{DatabaseConnection, DbErr, RuntimeErr, entity::*, query::*};
 use tracing::{error, instrument};
 
 use super::structs::{GetExistingUrlError, NewUrlRequest, NewUrlResponse, UpdateUrlResponse};

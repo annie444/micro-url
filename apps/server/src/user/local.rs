@@ -1,8 +1,8 @@
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
-use axum::{debug_handler, extract::State, Json};
+use axum::{Json, debug_handler, extract::State};
 use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use entity::{sessions, user, user_pass};
 use sea_orm::{entity::*, query::*};
@@ -76,7 +76,7 @@ pub async fn local_login(
         None => {
             return Err(LoginResponse::InvalidCredentials(
                 "Unknown user".to_string().into(),
-            ))
+            ));
         }
     };
 
@@ -90,7 +90,7 @@ pub async fn local_login(
         None => {
             return Err(LoginResponse::InvalidCredentials(
                 "Unknown user password".to_string().into(),
-            ))
+            ));
         }
     };
 

@@ -6,11 +6,11 @@ use entity::short_link::Entity as ShortLink;
 use lru::LruCache;
 use migration::{Migrator, MigratorTrait};
 use openidconnect::{
-    core::{CoreClient, CoreProviderMetadata},
     ClientId, ClientSecret, IssuerUrl, RedirectUrl,
+    core::{CoreClient, CoreProviderMetadata},
 };
-use reqwest::{redirect::Policy, tls::Certificate, ClientBuilder};
-use sea_orm::{entity::*, query::*, Database, DatabaseConnection};
+use reqwest::{ClientBuilder, redirect::Policy, tls::Certificate};
+use sea_orm::{Database, DatabaseConnection, entity::*, query::*};
 use url::Url;
 
 use super::{
@@ -25,7 +25,6 @@ pub const CHARS: [char; 64] = [
     'v', 'w', 'x', 'y', 'z', '-', '_',
 ];
 
-#[cfg(not(feature = "test"))]
 #[derive(FromRef, Debug, Clone)]
 pub struct ServerState {
     pub conn: DatabaseConnection,
@@ -38,7 +37,6 @@ pub struct ServerState {
     pub key: Key,
 }
 
-#[cfg(not(feature = "test"))]
 impl ServerState {
     #[tracing::instrument]
     pub async fn new(config: &ServerConfig) -> Self {

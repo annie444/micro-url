@@ -6,9 +6,9 @@ use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use chrono::{Duration, Local};
 use entity::{sessions, user};
 use openidconnect::{
-    core::{CoreAuthenticationFlow, CoreGenderClaim},
     AccessTokenHash, AuthorizationCode, CsrfToken, EmptyAdditionalClaims, Nonce,
     OAuth2TokenResponse, PkceCodeChallenge, PkceCodeVerifier, TokenResponse, UserInfoClaims,
+    core::{CoreAuthenticationFlow, CoreGenderClaim},
 };
 use sea_orm::entity::*;
 use time::Duration as TimeDuration;

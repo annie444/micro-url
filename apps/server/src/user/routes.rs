@@ -40,7 +40,7 @@ pub async fn logout(
         None => {
             return Err(LogoutResponse::SessionNotFound(
                 "User session not found".to_string().into(),
-            ))
+            ));
         }
     };
 

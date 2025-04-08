@@ -1,19 +1,50 @@
-import { defineConfig } from 'eslint/config'
-import eslintPluginAstro from 'eslint-plugin-astro'
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
-import jsxA11y from 'eslint-plugin-jsx-a11y'
-import js from '@eslint/js'
+import jsxa11y from "eslint-plugin-jsx-a11y";
+import eslintPluginAstro from "eslint-plugin-astro";
+import js from "@eslint/js";
+import ts from "typescript-eslint";
+import react from "eslint-plugin-react";
+import globals from "globals";
+import { globalIgnores } from "eslint/config";
 
-export default defineConfig([
-  config,
+export default ts.config([
+  globalIgnores([
+    "node_modules/",
+    "**/node_modules",
+    ".cargo/",
+    "**/.cargo",
+    ".nx/",
+    "**/.nx",
+    "apps/",
+    "libs/",
+    "kanidm/",
+    "target/",
+    "**/target",
+    "dist/",
+    "**/dist",
+    ".astro/",
+    "**/.astro",
+  ]),
+  // add more generic rule sets here, such as:
   js.configs.recommended,
-  eslintPluginAstro.configs.recommended,
-  jsxA11y.flatConfigs.recommended,
-  eslintPluginPrettierRecommended,
+  ts.configs.strict,
+  ts.configs.stylistic,
+  ...eslintPluginAstro.configs.recommended,
   {
-    rules: {
-      semi: 'error',
-      'prefer-const': 'error',
+    languageOptions: {
+      globals: globals.browser,
     },
   },
-])
+  {
+    rules: {
+      // override/add rules settings here, such as:
+      "astro/no-set-html-directive": "error",
+    },
+  },
+  {
+    files: ["**/*.{jsx,tsx}"],
+    plugins: {
+      react,
+      jsxa11y,
+    },
+  },
+]);

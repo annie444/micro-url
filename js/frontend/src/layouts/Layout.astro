@@ -1,33 +1,33 @@
 ---
-import '../styles/global.css';
-import favicon from '../assets/favicon.svg';
+import "../styles/global.css";
+import favicon from "../assets/favicon.svg";
 const { content } = Astro.props;
-import { cn } from '@/lib/utils'
+import { cn } from "@/lib/utils";
 
-import { Footer } from '@/components/shared/Footer'
-import { Toaster } from '@/components/ui/sonner'
+import { Footer } from "@/components/shared/Footer";
+import { Toaster } from "@/components/ui/sonner";
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href={favicon.src} />
-		<meta name="generator" content={Astro.generator} />
-		<title>{content.title}</title>
-	</head>
-	<body class="h-screen grid grid-rows-[1fr_auto]">
-		<main
-			class={cn(
-				'container mx-auto',
-				'w-full max-w-4xl',
-				'grid content-center',
-				'p-4'
-			)}
-		>
-			<slot />
-		</main>
-		<Footer />
-		<Toaster client:load className="!bottom-36"/>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href={favicon.src} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{content.title}</title>
+  </head>
+  <body class="grid h-screen grid-rows-[1fr_auto]">
+    <main
+      class={cn(
+        "container mx-auto",
+        "w-full max-w-4xl",
+        "grid content-center",
+        "p-4",
+      )}
+    >
+      <slot />
+    </main>
+    <Footer />
+    <Toaster client:load className="!bottom-36" />
+  </body>
 </html>

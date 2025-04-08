@@ -1,6 +1,6 @@
 use std::env;
 
-use openidconnect::{core::CoreClaimName, Scope};
+use openidconnect::{Scope, core::CoreClaimName};
 use serde::{Deserialize, Serialize};
 use shuttle_runtime::SecretStore;
 

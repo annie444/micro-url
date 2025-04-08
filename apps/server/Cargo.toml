@@ -54,6 +54,3 @@ url = { version = "2.5.4", features = ["serde"] }
 time = "0.3.41"
 openidconnect = { version = "4", features = ["native-tls", "reqwest"] }
 argon2 = { version = "0.5", features = ["std"] }
-
-[features]
-test = ["sea-orm/mock"]

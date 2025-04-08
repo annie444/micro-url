@@ -2,9 +2,8 @@ use axum::Router;
 use entity::{short_link, user as entity_user};
 use serde::Serialize;
 use utoipa::{
-    openapi,
+    Modify, OpenApi, openapi,
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
-    Modify, OpenApi,
 };
 use utoipa_axum::{router::OpenApiRouter, routes};
 use utoipa_swagger_ui::SwaggerUi;
@@ -33,14 +32,15 @@ impl Modify for SecurityDef {
     modifiers(&SecurityDef),
     components(
         schemas(
-            entity_user::Model, 
-            short_link::Model, 
-            user::structs::NewUserRequest, 
-            user::structs::LoginRequest, 
+            entity_user::Model,
+            short_link::Model,
+            user::structs::NewUserRequest,
+            user::structs::LoginRequest,
             user::structs::UserProfile,
             user::structs::UserLinks,
             user::structs::OidcName,
-            structs::BasicError, 
+            urls::structs::NewUrlRequest,
+            structs::BasicError,
             structs::BasicResponse
         ),
     ),
