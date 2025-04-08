@@ -69,6 +69,9 @@ lint:
 test:
   pnpm exec nx run-many --target=test
 
+nx *args:
+  pnpm exec nx {{args}}
+
 run $RUST_LOG="trace": kanidm-up build
   #!/usr/bin/env bash
   set -eo pipefail
