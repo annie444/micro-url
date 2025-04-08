@@ -72,7 +72,7 @@ lint:
 test:
   pnpm exec nx run-many --target=test
 
-run $RUST_LOG="trace": kanidm-up
+run $RUST_LOG="trace": kanidm-up build
   #!/usr/bin/env bash
   set -eo pipefail
   if [ ! -f ./Secrets.toml ]; then
