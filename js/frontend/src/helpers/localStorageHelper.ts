@@ -1,4 +1,4 @@
-type LocalStorageKey = 'hasDismissedWelcomeToast'
+type LocalStorageKey = 'hasDismissedWelcomeToast' | 'token'
 
 export class LocalStorageHelper {
   static setItem(key: LocalStorageKey, value: string) {
