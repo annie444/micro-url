@@ -33,7 +33,7 @@ updates:
 
   - package-ecosystem: cargo
     commit-message:
-      prefix: "Fix(dependencies): "
+      prefix: "chore(deps): "
     directories:
       - /
       - /apps/micro_url
