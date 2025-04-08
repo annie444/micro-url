@@ -19,13 +19,12 @@ export function NewUrlFormContainer() {
     mode: 'onSubmit',
   })
 
-  const onSubmit: SubmitHandler<NewUrlFormSchema> = (values) => {
-    const { url, miniUrl } = values
+  const onSubmit: SubmitHandler<NewUrlFormSchema> = ({ url, miniUrl }) => {
     const response: Promise<{ data: { short_url: string } }> = new Promise(
       (resolve, reject) => {
         axios
           .post('/api/shorten', {
-            url: url,
+            url,
             short: miniUrl,
           })
           .then((res) => {
