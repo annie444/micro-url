@@ -129,7 +129,7 @@ impl ServerState {
     #[tracing::instrument]
     pub fn increment(&mut self) -> String {
         self.counter += 1;
-        let mut num = self.counter.clone();
+        let mut num = self.counter;
         let estimated_length = num.next_power_of_two().trailing_zeros().max(1);
         let mut b64 = String::with_capacity(estimated_length as usize);
 

@@ -74,6 +74,5 @@ pub fn router(state: ServerState) -> Router {
         .merge(user::local_router(state.clone()))
         .split_for_parts();
 
-    let router = router.merge(SwaggerUi::new("/swagger-ui").url("/apidoc/openapi.json", api));
-    router
+    router.merge(SwaggerUi::new("/swagger-ui").url("/apidoc/openapi.json", api))
 }

@@ -1177,6 +1177,7 @@ dependencies = [
  "sea-orm",
  "serde",
  "serde_json",
+ "typeshare",
  "utoipa",
  "utoipa-axum",
 ]
@@ -3692,6 +3693,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "typeshare",
  "url",
  "utoipa",
  "utoipa-axum",

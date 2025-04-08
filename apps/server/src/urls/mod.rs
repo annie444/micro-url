@@ -5,8 +5,8 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::state::ServerState;
 
-pub const URL_TAG: &'static str = "urls";
-pub const URL_PREFIX: &'static str = "/api/url";
+pub const URL_TAG: &str = "urls";
+pub const URL_PREFIX: &str = "/api/url";
 
 pub fn url_router(state: ServerState) -> OpenApiRouter {
     OpenApiRouter::new()

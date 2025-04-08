@@ -14,16 +14,19 @@ use openidconnect::{
 };
 use sea_orm::{DerivePartialModel, FromQueryResult};
 use serde::{Deserialize, Serialize};
+use typeshare::typeshare;
 use utoipa::{IntoParams, IntoResponses, ToSchema};
 
 use crate::structs::{BasicError, BasicResponse};
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[typeshare]
 pub struct OidcName {
     pub name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
+#[typeshare]
 pub enum OidcNameResponse {
     #[response(status = StatusCode::OK)]
     OidcName(#[to_schema] OidcName),
@@ -38,6 +41,7 @@ impl IntoResponse for OidcNameResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[typeshare]
 pub struct NewUserRequest {
     pub name: String,
     pub email: String,
@@ -45,6 +49,8 @@ pub struct NewUserRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
+#[allow(clippy::large_enum_variant)]
+#[typeshare]
 pub enum NewUserResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     UserAlreadyExists(#[to_schema] BasicError),
@@ -86,12 +92,15 @@ impl From<sea_orm::DbErr> for NewUserResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[typeshare]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
 }
 
 #[derive(Debug, Clone, IntoResponses)]
+#[allow(clippy::large_enum_variant)]
+#[typeshare]
 pub enum LoginResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     InvalidCredentials(#[to_schema] BasicError),
@@ -135,6 +144,8 @@ impl From<argon2::password_hash::Error> for LoginResponse {
 }
 
 #[derive(Debug, Clone, IntoResponses)]
+#[allow(clippy::large_enum_variant)]
+#[typeshare]
 pub enum LogoutResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     InvalidSession(#[to_schema] BasicError),
@@ -174,12 +185,14 @@ impl From<sea_orm::DbErr> for LogoutResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DerivePartialModel, FromQueryResult)]
 #[sea_orm(entity = "user::Entity")]
+#[typeshare]
 pub struct UserProfile {
     pub name: String,
     pub email: String,
 }
 
 #[derive(Debug, Clone, IntoResponses)]
+#[typeshare]
 pub enum UserProfileResponse {
     #[response(status = StatusCode::UNAUTHORIZED)]
     InvalidSession(#[to_schema] BasicError),
@@ -212,11 +225,13 @@ impl IntoResponse for UserProfileResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[typeshare]
 pub struct UserLinks {
     pub urls: Vec<short_link::Model>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
+#[typeshare]
 pub enum UserLinksResponse {
     #[response(status = StatusCode::UNAUTHORIZED)]
     InvalidSession(#[to_schema] BasicError),
@@ -247,6 +262,7 @@ impl IntoResponse for UserLinksResponse {
 }
 
 #[derive(Debug, Clone, IntoResponses)]
+#[typeshare]
 pub enum OidcCallbackResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     InvalidCsrfToken(#[to_schema] BasicError),
@@ -383,6 +399,7 @@ impl From<sea_orm::DbErr> for OidcCallbackResponse {
 }
 
 #[derive(Debug, Clone, IntoResponses)]
+#[typeshare]
 pub enum OidcLoginResponse {
     #[response(status = StatusCode::TEMPORARY_REDIRECT)]
     OidcLogin(#[to_schema] String, PrivateCookieJar),
@@ -399,6 +416,7 @@ impl IntoResponse for OidcLoginResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoParams)]
+#[typeshare]
 pub struct AuthRequest {
     pub code: String,
     pub state: String,

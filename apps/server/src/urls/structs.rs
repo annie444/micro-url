@@ -6,12 +6,14 @@ use axum::{
 use chrono::NaiveDateTime;
 use entity::short_link;
 use serde::{Deserialize, Serialize};
+use typeshare::typeshare;
 use utoipa::{IntoResponses, ToSchema};
 use uuid::Uuid;
 
 use crate::structs::BasicError;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[typeshare]
 pub struct NewUrlRequest {
     pub url: String,
     pub short: Option<String>,
@@ -20,6 +22,7 @@ pub struct NewUrlRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
+#[typeshare]
 pub enum NewUrlResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     UrlParseError(#[to_schema] BasicError),
@@ -51,6 +54,7 @@ impl IntoResponse for NewUrlResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
+#[typeshare]
 pub enum GetExistingUrlError {
     #[response(status = StatusCode::BAD_REQUEST)]
     UrlNotFound,
@@ -109,6 +113,7 @@ impl From<url::ParseError> for NewUrlResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
+#[typeshare]
 pub enum DeleteUrlResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),
@@ -151,6 +156,7 @@ impl From<sea_orm::DbErr> for DeleteUrlResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
+#[typeshare]
 pub enum UpdateUrlResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     UrlParseError(#[to_schema] BasicError),
@@ -200,6 +206,7 @@ impl From<url::ParseError> for UpdateUrlResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
+#[typeshare]
 pub enum GetUrlResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),
@@ -236,6 +243,7 @@ impl From<sea_orm::DbErr> for GetUrlResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses)]
+#[typeshare]
 pub enum GetUrlInfoResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),

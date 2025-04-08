@@ -95,7 +95,7 @@ pub async fn init_router(config: config::ServerConfig, state: Option<ServerState
         .route("/auth/callback", get(user::oidc::oidc_callback))
         .with_state(state);
 
-    let app = Router::new().merge(app_routes).merge(api_routes).layer(
+    Router::new().merge(app_routes).merge(api_routes).layer(
         ServiceBuilder::new()
             .layer(SetRequestIdLayer::new(
                 x_request_id.clone(),
@@ -104,7 +104,5 @@ pub async fn init_router(config: config::ServerConfig, state: Option<ServerState
             .layer(trace_layer)
             .layer(PropagateRequestIdLayer::new(x_request_id))
             .layer(CompressionLayer::new()),
-    );
-
-    app
+    )
 }

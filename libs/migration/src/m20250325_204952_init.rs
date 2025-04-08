@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveMigrationName)]
@@ -220,6 +222,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
+#[allow(clippy::enum_variant_names)]
 enum User {
     Table,
     UserId,
@@ -241,10 +244,10 @@ enum UserPassFk {
     UserId,
 }
 
-impl ToString for UserPassFk {
-    fn to_string(&self) -> String {
+impl Display for UserPassFk {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UserId => "fk_user_id".to_owned(),
+            Self::UserId => write!(f, "fk_user_id"),
         }
     }
 }
@@ -268,10 +271,10 @@ enum SessionsIdx {
     SessionId,
 }
 
-impl ToString for SessionsIdx {
-    fn to_string(&self) -> String {
+impl Display for SessionsIdx {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::SessionId => "idx_session_id".to_owned(),
+            Self::SessionId => write!(f, "idx_session_id"),
         }
     }
 }
@@ -286,10 +289,10 @@ enum SessionsFk {
     UserId,
 }
 
-impl ToString for SessionsFk {
-    fn to_string(&self) -> String {
+impl Display for SessionsFk {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UserId => "fk_user_id".to_owned(),
+            Self::UserId => write!(f, "fk_user_id"),
         }
     }
 }
@@ -321,13 +324,13 @@ enum ShortLinkIdx {
     ExpiryDate,
 }
 
-impl ToString for ShortLinkIdx {
-    fn to_string(&self) -> String {
+impl Display for ShortLinkIdx {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Url => "idx_url".to_owned(),
-            Self::OriginalUrl => "idx_original_url".to_owned(),
-            Self::ShortUrl => "idx_short_url".to_owned(),
-            Self::ExpiryDate => "idx_expiry_date".to_owned(),
+            Self::Url => write!(f, "idx_url"),
+            Self::OriginalUrl => write!(f, "idx_original_url"),
+            Self::ShortUrl => write!(f, "idx_short_url"),
+            Self::ExpiryDate => write!(f, "idx_expiry_date"),
         }
     }
 }
@@ -342,10 +345,10 @@ enum ShortLinkFk {
     UserId,
 }
 
-impl ToString for ShortLinkFk {
-    fn to_string(&self) -> String {
+impl Display for ShortLinkFk {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UserId => "fk_user_id".to_owned(),
+            Self::UserId => write!(f, "fk_user_id"),
         }
     }
 }

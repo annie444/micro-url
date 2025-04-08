@@ -9,9 +9,11 @@ use openidconnect::{
     StandardTokenIntrospectionResponse, StandardTokenResponse,
 };
 use serde::{Deserialize, Serialize};
+use typeshare::typeshare;
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[typeshare]
 pub struct BasicError {
     pub error: String,
 }
@@ -31,6 +33,7 @@ impl From<&str> for BasicError {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[typeshare]
 pub struct BasicResponse {
     pub message: String,
 }
@@ -50,12 +53,14 @@ impl From<&str> for BasicResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[typeshare]
 pub struct AuthUrl {
     pub url: String,
     pub name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[typeshare]
 pub struct AuthUrls(pub Vec<AuthUrl>); // New struct to hold a vector of AuthUrl
 
 pub type OidcClient = Client<

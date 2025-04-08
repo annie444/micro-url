@@ -7,12 +7,12 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::state::ServerState;
 
-pub const OIDC_TAG: &'static str = "oidc-users";
-pub const USER_TAG: &'static str = "user";
-pub const LOCAL_TAG: &'static str = "local-users";
-pub const OIDC_PREFIX: &'static str = "/api/user/oidc";
-pub const USER_PREFIX: &'static str = "/api/user";
-pub const LOCAL_PREFIX: &'static str = "/api/user/local";
+pub const OIDC_TAG: &str = "oidc-users";
+pub const USER_TAG: &str = "user";
+pub const LOCAL_TAG: &str = "local-users";
+pub const OIDC_PREFIX: &str = "/api/user/oidc";
+pub const USER_PREFIX: &str = "/api/user";
+pub const LOCAL_PREFIX: &str = "/api/user/local";
 
 pub fn oidc_router(state: ServerState) -> OpenApiRouter {
     OpenApiRouter::new()

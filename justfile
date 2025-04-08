@@ -36,6 +36,9 @@ install:
   if ! command -v version &> /dev/null; then
     cargo install version-manager
   fi
+  if ! command -b typeshare &> /dev/null; then
+    cargo install typeshare-cli
+  fi
   # Install nvm
   if ! command -v npm &> /dev/null; then
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
@@ -161,7 +164,10 @@ generate:
     --with-serde=both \
     --serde-skip-hidden-column \
     --date-time-crate=chrono \
-    --model-extra-derives "utoipa::ToSchema"
+    --model-extra-derives "utoipa::ToSchema" \
+    --model-extra-attributes "typeshare::typeshare" \
+    --enum-extra-derives "utoipa::ToSchema" \
+    --enum-extra-attributes "typeshare::typeshare"
 
 dev-db:
   #!/usr/bin/env bash
