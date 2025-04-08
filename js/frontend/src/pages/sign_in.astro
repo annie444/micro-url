@@ -1,0 +1,11 @@
+---
+import Layout from '@/layouts/Layout.astro';
+// Component Imports
+import { SignInFormContainer } from '@/components/SignInForm';
+---
+
+<Layout content={{ title: "MicroUrl: Sign In" }}>
+	<div class="w-full max-w-80 mx-auto">
+		<SignInFormContainer client:load />
+	</div>
+</Layout>
