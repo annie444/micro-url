@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -38,9 +39,9 @@ jobs:
 
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
-      - run: pnpm exec nx affected --base=main --head=HEAD -t lint
-      - run: pnpm exec nx affected --base=main --head=HEAD -t test
-      - run: pnpm exec nx affected --base=main --head=HEAD -t build
+      - run: pnpm exec nx affected --base=origin/main --head=HEAD -t lint
+      - run: pnpm exec nx affected --base=origin/main --head=HEAD -t test
+      - run: pnpm exec nx affected --base=origin/main --head=HEAD -t build
 
       - name: Save NX cache
         id: cache-nx-save
