@@ -22,14 +22,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Install node
         uses: actions/setup-node@v4
         with:
           node-version-file: ".node-version"
           cache: "pnpm"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
 
       - name: Install rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
