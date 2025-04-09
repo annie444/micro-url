@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type AxiosResponse } from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm, type SubmitHandler } from "react-hook-form";
 
@@ -7,6 +7,7 @@ import { newUrlFormSchema, type NewUrlFormSchema } from "./NewUrlFormSchema";
 import { NewUrlForm } from "./NewUrlForm";
 import { ToastHelper, LocalStorageHelper } from "@/helpers";
 import { useEffect } from "react";
+import type { ShortLink } from "@/lib/types/ShortLink";
 
 export function NewUrlFormContainer() {
   const formMethods = useForm<NewUrlFormSchema>({
@@ -18,8 +19,11 @@ export function NewUrlFormContainer() {
     mode: "onSubmit",
   });
 
-  const onSubmit: SubmitHandler<NewUrlFormSchema> = ({ url, miniUrl }) => {
-    const response: Promise<{ data: { short_url: string } }> = new Promise(
+  const onSubmit: SubmitHandler<NewUrlFormSchema> = async ({
+    url,
+    miniUrl,
+  }) => {
+    const response = new Promise<AxiosResponse<ShortLink>>(
       (resolve, reject) => {
         axios
           .post("/api/shorten", {
@@ -34,7 +38,7 @@ export function NewUrlFormContainer() {
           });
       },
     );
-    ToastHelper.notifyWithPromise({
+    await ToastHelper.notifyWithPromise({
       response,
       successMessage: "URL shortened successfully!",
       errorMessage: "Error shortening URL",
