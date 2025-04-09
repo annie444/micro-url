@@ -68,8 +68,12 @@ jobs:
           branch: create-pull-request/format
           delete-branch: true
           title: "style: Formatting changes by create-pull-request action"
-          labels: "ready for review"
-          reviewers: annie444
+          labels: |
+            ready for review
+            merge after
+          reviewers: |
+            annie444
+            kip-west
           maintainer-can-modify: true
           base: ${{ github.event.pull_request.base.ref }}
 
