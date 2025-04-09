@@ -1,2 +1,2 @@
-export * as LocalStorageHelper from "./localStorageHelper.tsx";
-export * as ToastHelper from "./toastHelper.tsx";
+export * as LocalStorageHelper from "./localStorageHelper.ts";
+export * as ToastHelper from "./toastHelper.ts";
