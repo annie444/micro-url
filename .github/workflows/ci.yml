@@ -29,6 +29,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Restore NX cache
+        id: cache-nx-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx
+
       - uses: nrwl/nx-set-shas@v4
 
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
@@ -36,3 +43,10 @@ jobs:
       - run: pnpm exec nx affected -t lint
       - run: pnpm exec nx affected -t test
       - run: pnpm exec nx affected -t build
+
+      - name: Save NX cache
+        id: cache-nx-save
+        uses: actions/cache/save@v4
+        with:
+          path: .nx/cache
+          key: ${{ steps.cache-nx-restore.outputs.cache-primary-key }}
