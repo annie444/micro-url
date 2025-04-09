@@ -1,9 +1,21 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "release": {
+    "releaseTagPattern": "release/v{version}",
+    "git": {
+      "commitMessage": "chore(release): v{version}"
+    }
+  },
   "targetDefaults": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["{projectRoot}/dist"],
+      "cache": true
+    },
+    "lint": {
+      "cache": true
+    },
+    "test": {
       "cache": true
     }
   },
@@ -13,5 +25,13 @@
     "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
   },
   "nxCloudId": "67e889d5a4879021468aba4d",
-  "plugins": ["@monodon/rust"]
+  "plugins": [
+    "@monodon/rust",
+    {
+      "plugin": "@nx/eslint/plugin",
+      "options": {
+        "targetName": "lint"
+      }
+    }
+  ]
 }

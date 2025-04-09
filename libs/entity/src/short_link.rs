@@ -3,8 +3,21 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    DeriveEntityModel,
+    Eq,
+    Serialize,
+    Deserialize,
+    utoipa :: ToSchema,
+    ts_rs :: TS,
+)]
 #[sea_orm(table_name = "short_link")]
+#[ts(export)]
+#[ts(export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(rename = "ShortLink")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
@@ -13,8 +26,10 @@ pub struct Model {
     #[sea_orm(unique)]
     pub short_url: String,
     pub original_url: String,
+    #[ts(optional)]
     pub user_id: Option<Uuid>,
-    pub expiry_date: Option<DateTimeWithTimeZone>,
+    #[ts(optional)]
+    pub expiry_date: Option<DateTime>,
     pub views: i64,
     pub created_at: DateTime,
     pub updated_at: DateTime,

@@ -1,7 +1,8 @@
 [package]
 name = "server"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,16 +16,11 @@ chrono.workspace = true
 serde_json.workspace = true
 uuid.workspace = true
 tokio.workspace = true
-axum = { version = '0.8', features = [
-  'macros',
-  'http1',
-  'http2',
-  'json',
-  'multipart',
-  'tracing',
-  'form',
-  'query',
-] }
+utoipa.workspace = true
+utoipa-axum.workspace = true
+axum.workspace = true
+utoipa-swagger-ui.workspace = true
+ts-rs.workspace = true
 tower = { version = '0.5.2', features = ['full'] }
 tower-http = { version = '0.6.2', features = ['full', 'trace'] }
 shuttle-axum = { version = "0.53.0", default-features = false, features = [
@@ -58,8 +54,3 @@ url = { version = "2.5.4", features = ["serde"] }
 time = "0.3.41"
 openidconnect = { version = "4", features = ["native-tls", "reqwest"] }
 argon2 = { version = "0.5", features = ["std"] }
-utoipa = { version = "5.3.1", features = ["axum_extras", "auto_into_responses", "chrono", "config", "debug", "indexmap", "openapi_extensions", "preserve_order", "preserve_path_order", "rc_schema", "ulid", "url", "uuid"] }
-utoipa-axum = { version = "0.2.0", features = ["debug"] }
-
-[features]
-test = ["sea-orm/mock"]

@@ -69,10 +69,13 @@ lint:
 test:
   pnpm exec nx run-many --target=test
 
-run $RUST_LOG="trace": kanidm-up
+nx *args:
+  pnpm exec nx {{args}}
+
+run $RUST_LOG="trace": kanidm-up build
   #!/usr/bin/env bash
   set -eo pipefail
-  if [ -f ./Secrets.toml ]; then
+  if [ ! -f ./Secrets.toml ]; then
     cp Secrets.example.toml Secrets.toml
   fi
   shuttle run
@@ -160,7 +163,13 @@ generate:
     --include-hidden-tables \
     --with-serde=both \
     --serde-skip-hidden-column \
-    --date-time-crate=chrono
+    --date-time-crate=chrono \
+    --model-extra-derives "utoipa::ToSchema, ts_rs::TS" \
+    --model-extra-attributes "ts(export)" \
+    --model-extra-attributes 'ts(export_to = "../../../js/frontend/src/lib/types/")' \
+    --enum-extra-derives "utoipa::ToSchema, ts_rs::TS" \
+    --enum-extra-attributes "ts(export)" \
+    --enum-extra-attributes 'ts(export_to = "../../../js/frontend/src/lib/types/")' \
 
 dev-db:
   #!/usr/bin/env bash

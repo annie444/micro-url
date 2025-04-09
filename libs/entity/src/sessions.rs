@@ -3,8 +3,21 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    DeriveEntityModel,
+    Eq,
+    Serialize,
+    Deserialize,
+    utoipa :: ToSchema,
+    ts_rs :: TS,
+)]
 #[sea_orm(table_name = "sessions")]
+#[ts(export)]
+#[ts(export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(rename = "Sessions")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,

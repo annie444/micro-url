@@ -4,7 +4,7 @@ use tower_http::{
     trace::{DefaultOnResponse, MakeSpan, TraceLayer},
 };
 use tracing::Level;
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[cfg(debug_assertions)]
 pub const DEFAULT_MESSAGE_LEVEL: Level = Level::DEBUG;

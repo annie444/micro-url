@@ -1,19 +1,17 @@
-type LocalStorageKey = 'hasDismissedWelcomeToast' | 'token'
+type LocalStorageKey = "hasDismissedWelcomeToast";
 
-export class LocalStorageHelper {
-  static setItem(key: LocalStorageKey, value: string) {
-    localStorage.setItem(key, value)
-  }
+export function setItem(key: LocalStorageKey, value: string) {
+  localStorage.setItem(key, value);
+}
 
-  static getItem(key: LocalStorageKey) {
-    return localStorage.getItem(key)
-  }
+export function getItem(key: LocalStorageKey) {
+  return localStorage.getItem(key);
+}
 
-  static removeItem(key: LocalStorageKey) {
-    localStorage.removeItem(key)
-  }
+export function removeItem(key: LocalStorageKey) {
+  localStorage.removeItem(key);
+}
 
-  static clear() {
-    localStorage.clear()
-  }
+export function clear() {
+  localStorage.clear();
 }

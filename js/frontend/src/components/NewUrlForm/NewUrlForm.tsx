@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   FormControl,
   FormDescription,
@@ -8,24 +8,24 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { useFormContext } from 'react-hook-form'
-import { type NewUrlFormSchema } from './NewUrlFormSchema'
-import { Form } from '@/components/shared/Form'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useFormContext } from "react-hook-form";
+import { type NewUrlFormSchema } from "./NewUrlFormSchema";
+import { Form } from "@/components/shared/Form";
 
-type NewUrlFormProps = {
-  handleSubmit(): void
+interface NewUrlFormProps {
+  handleSubmit(): void;
 }
 
 export function NewUrlForm({ handleSubmit }: NewUrlFormProps) {
-  const { register } = useFormContext<NewUrlFormSchema>()
+  const { register } = useFormContext<NewUrlFormSchema>();
 
   return (
     <Form onSubmit={handleSubmit}>
       <FormField
-        {...register('url')}
+        {...register("url")}
         render={({ field }) => (
           <FormItem>
             <FormLabel>URL</FormLabel>
@@ -40,7 +40,7 @@ export function NewUrlForm({ handleSubmit }: NewUrlFormProps) {
         )}
       />
       <FormField
-        {...register('miniUrl')}
+        {...register("miniUrl")}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Custom URL</FormLabel>
@@ -56,5 +56,5 @@ export function NewUrlForm({ handleSubmit }: NewUrlFormProps) {
       />
       <Button type="submit">Submit</Button>
     </Form>
-  )
+  );
 }
