@@ -49,34 +49,6 @@ jobs:
           path: .nx/cache
           key: ${{ runner.os }}-nx
 
-      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
-      # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
-      - name: Lint changed files
-        continue-on-error: true
-        id: lint-changed
-        run: pnpm exec nx affected --base=origin/main --head=HEAD -t lint
-
-      - name: Format changed files
-        if: ${{ steps.lint-changed.outcome == 'failure' }}
-        run: pnpm exec nx affected --base=origin/main --head=HEAD -t format
-
-      - name: Create Pull Request
-        if: ${{ steps.lint-changed.outcome == 'failure' && github.event_name == 'pull_request' }}
-        uses: peter-evans/create-pull-request@v7
-        with:
-          commit-message: "style: [create-pull-request] automated format"
-          branch: create-pull-request/format
-          delete-branch: true
-          title: "style: Formatting changes by create-pull-request action"
-          labels: |
-            ready for review
-            merge after
-          reviewers: |
-            annie444
-            kip-west
-          maintainer-can-modify: true
-          base: ${{ github.event.pull_request.base.ref }}
-
       - name: Test changed files
         run: pnpm exec nx affected --base=origin/main --head=HEAD -t test
 
