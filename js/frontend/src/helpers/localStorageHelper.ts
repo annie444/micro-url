@@ -1,4 +1,4 @@
-type LocalStorageKey = "hasDismissedWelcomeToast";
+type LocalStorageKey = "hasDismissedWelcomeToast" | "token";
 
 export function setItem(key: LocalStorageKey, value: string) {
   localStorage.setItem(key, value);
