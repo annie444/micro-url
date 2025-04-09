@@ -1,13 +1,16 @@
 {
   "name": "micro-url-project",
   "version": "0.0.0",
+  "type": "module",
   "private": true,
   "workspaces": [
     "js/*"
   ],
   "scripts": {
     "build-server": "cargo build -p server --release",
-    "run": "shuttle run"
+    "run": "shuttle run",
+    "lint": "eslint . && prettier --check . && cargo clippy --all-targets --all-features -- -D warnings && cargo fmt --all -- --check",
+    "format": "eslint . --fix && prettier --write . && cargo fmt --all"
   },
   "engines": {
     "node": ">=22.14.0",
@@ -15,11 +18,28 @@
   },
   "packageManager": "pnpm@10.7.1",
   "devDependencies": {
-    "@nx/workspace": "20.6.4",
-    "nx": "20.6.4",
-    "prettier": "^3.5.3"
-  },
-  "dependencies": {
-    "@monodon/rust": "2.2.0"
+    "@eslint/js": "^9.24.0",
+    "@monodon/rust": "2.3.0",
+    "@nx/node": "20.7.2",
+    "@nx/workspace": "^20.7.2",
+    "@typescript-eslint/parser": "^8.29.1",
+    "eslint": "^9.24.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-import-resolver-typescript": "^4.3.2",
+    "eslint-plugin-astro": "^1.3.1",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-n": "^17.17.0",
+    "eslint-plugin-prettier": "^5.2.6",
+    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin@latest": "link:nx/eslint-plugin@latest",
+    "globals": "^16.0.0",
+    "nx": "20.7.2",
+    "prettier": "^3.5.3",
+    "prettier-plugin-astro": "^0.14.1",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.29.1"
   }
 }

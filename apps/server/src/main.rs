@@ -1,4 +1,4 @@
-use server::{init_router, state::ServerState, ServerConfig};
+use server::{ServerConfig, init_router, state::ServerState};
 use shuttle_runtime::SecretStore;
 use sqlx::PgPool;
 

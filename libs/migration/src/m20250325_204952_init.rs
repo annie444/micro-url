@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveMigrationName)]
@@ -12,11 +14,11 @@ impl MigrationTrait for Migration {
                     .table(ShortLink::Table)
                     .if_not_exists()
                     .col(pk_auto(ShortLink::Id))
-                    .col(string_uniq(ShortLink::Url))
-                    .col(string_uniq(ShortLink::ShortUrl))
+                    .col(string(ShortLink::Url).unique_key())
+                    .col(string(ShortLink::ShortUrl).unique_key())
                     .col(string(ShortLink::OriginalUrl))
                     .col(uuid_null(ShortLink::UserId))
-                    .col(timestamp_with_time_zone_null(ShortLink::ExpiryDate))
+                    .col(timestamp_null(ShortLink::ExpiryDate))
                     .col(big_unsigned(ShortLink::Views).default(0))
                     .col(timestamp(ShortLink::CreatedAt))
                     .col(timestamp(ShortLink::UpdatedAt))
@@ -30,7 +32,7 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_uuid(User::UserId))
                     .col(string(User::Name))
-                    .col(string_uniq(User::Email))
+                    .col(string(User::Email).unique_key())
                     .col(timestamp(User::CreatedAt))
                     .col(timestamp(User::UpdatedAt))
                     .to_owned(),
@@ -92,6 +94,15 @@ impl MigrationTrait for Migration {
                     .table(ShortLink::Table)
                     .name(ShortLinkIdx::ExpiryDate)
                     .col(ShortLink::ExpiryDate)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_index(
+                Index::create()
+                    .table(Sessions::Table)
+                    .name(SessionsIdx::SessionId)
+                    .col(Sessions::SessionId)
                     .to_owned(),
             )
             .await?;
@@ -164,6 +175,14 @@ impl MigrationTrait for Migration {
             )
             .await?;
         manager
+            .drop_index(
+                Index::drop()
+                    .table(Sessions::Table)
+                    .name(SessionsIdx::SessionId)
+                    .to_owned(),
+            )
+            .await?;
+        manager
             .drop_foreign_key(
                 ForeignKey::drop()
                     .table(ShortLink::Table)
@@ -203,6 +222,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
+#[allow(clippy::enum_variant_names)]
 enum User {
     Table,
     UserId,
@@ -224,6 +244,20 @@ enum UserPassFk {
     UserId,
 }
 
+impl Display for UserPassFk {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UserId => write!(f, "fk_user_id"),
+        }
+    }
+}
+
+impl From<UserPassFk> for String {
+    fn from(fk: UserPassFk) -> Self {
+        fk.to_string()
+    }
+}
+
 #[derive(DeriveIden)]
 enum Sessions {
     Table,
@@ -233,34 +267,38 @@ enum Sessions {
     Expiry,
 }
 
+enum SessionsIdx {
+    SessionId,
+}
+
+impl Display for SessionsIdx {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SessionId => write!(f, "idx_session_id"),
+        }
+    }
+}
+
+impl From<SessionsIdx> for String {
+    fn from(idx: SessionsIdx) -> Self {
+        idx.to_string()
+    }
+}
+
 enum SessionsFk {
     UserId,
 }
 
-impl ToString for SessionsFk {
-    fn to_string(&self) -> String {
+impl Display for SessionsFk {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UserId => "fk_user_id".to_owned(),
+            Self::UserId => write!(f, "fk_user_id"),
         }
     }
 }
 
 impl From<SessionsFk> for String {
     fn from(fk: SessionsFk) -> Self {
-        fk.to_string()
-    }
-}
-
-impl ToString for UserPassFk {
-    fn to_string(&self) -> String {
-        match self {
-            Self::UserId => "fk_user_id".to_owned(),
-        }
-    }
-}
-
-impl From<UserPassFk> for String {
-    fn from(fk: UserPassFk) -> Self {
         fk.to_string()
     }
 }
@@ -286,13 +324,13 @@ enum ShortLinkIdx {
     ExpiryDate,
 }
 
-impl ToString for ShortLinkIdx {
-    fn to_string(&self) -> String {
+impl Display for ShortLinkIdx {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Url => "idx_url".to_owned(),
-            Self::OriginalUrl => "idx_original_url".to_owned(),
-            Self::ShortUrl => "idx_short_url".to_owned(),
-            Self::ExpiryDate => "idx_expiry_date".to_owned(),
+            Self::Url => write!(f, "idx_url"),
+            Self::OriginalUrl => write!(f, "idx_original_url"),
+            Self::ShortUrl => write!(f, "idx_short_url"),
+            Self::ExpiryDate => write!(f, "idx_expiry_date"),
         }
     }
 }
@@ -307,10 +345,10 @@ enum ShortLinkFk {
     UserId,
 }
 
-impl ToString for ShortLinkFk {
-    fn to_string(&self) -> String {
+impl Display for ShortLinkFk {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UserId => "fk_user_id".to_owned(),
+            Self::UserId => write!(f, "fk_user_id"),
         }
     }
 }

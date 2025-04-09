@@ -1,10 +1,11 @@
 use std::env;
 
-use openidconnect::{core::CoreClaimName, Scope};
+use openidconnect::{Scope, core::CoreClaimName};
 use serde::{Deserialize, Serialize};
 use shuttle_runtime::SecretStore;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::derivable_impls)]
 pub struct ServerConfig {
     pub db: ServerDatabaseConfig,
     pub internal_url: String,
@@ -31,7 +32,7 @@ impl Default for ServerConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ServerDatabaseConfig {
     pub username: Option<String>,
     pub password: Option<String>,
@@ -41,20 +42,7 @@ pub struct ServerDatabaseConfig {
     pub schema: Option<String>,
 }
 
-impl Default for ServerDatabaseConfig {
-    fn default() -> Self {
-        Self {
-            username: None,
-            password: None,
-            hostname: None,
-            port: None,
-            database: None,
-            schema: None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OidcConfig {
     pub name: String,
     pub client_id: String,
@@ -63,20 +51,6 @@ pub struct OidcConfig {
     pub claims: Vec<CoreClaimName>,
     pub scopes: Vec<Scope>,
     pub cert_path: Option<String>,
-}
-
-impl Default for OidcConfig {
-    fn default() -> Self {
-        Self {
-            name: "".to_string(),
-            client_id: "".to_string(),
-            client_secret: "".to_string(),
-            discovery_url: "".to_string(),
-            cert_path: None,
-            scopes: vec![],
-            claims: vec![],
-        }
-    }
 }
 
 impl ServerConfig {
@@ -230,10 +204,10 @@ impl ServerDatabaseConfig {
         let mut connection_str = String::from("postgres://");
         if let Some(username) = &self.username {
             connection_str.push_str(username);
-            connection_str.push_str(":");
+            connection_str.push(':');
             if let Some(password) = &self.password {
                 connection_str.push_str(password);
-                connection_str.push_str("@");
+                connection_str.push('@');
             }
         }
         if let Some(hostname) = &self.hostname {
@@ -241,9 +215,9 @@ impl ServerDatabaseConfig {
         } else {
             connection_str.push_str("localhost");
         }
-        connection_str.push_str(":");
+        connection_str.push(':');
         connection_str.push_str(self.port.as_deref().unwrap_or("5432"));
-        connection_str.push_str("/");
+        connection_str.push('/');
         if let Some(database) = &self.database {
             connection_str.push_str(database);
         }
@@ -257,8 +231,5 @@ impl ServerDatabaseConfig {
 
 #[tracing::instrument]
 fn get_env_var(key: &str) -> Option<String> {
-    match env::var(key) {
-        Ok(val) => Some(val),
-        Err(_) => None,
-    }
+    env::var(key).ok()
 }

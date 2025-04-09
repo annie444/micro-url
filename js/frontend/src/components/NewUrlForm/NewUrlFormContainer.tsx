@@ -1,47 +1,46 @@
-import axios from 'axios'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { FormProvider, useForm, type SubmitHandler } from 'react-hook-form'
+import axios from "axios";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm, type SubmitHandler } from "react-hook-form";
 
-import { Button } from '@/components/ui/button'
-import { newUrlFormSchema, type NewUrlFormSchema } from './NewUrlFormSchema'
-import { NewUrlForm } from './NewUrlForm'
-import { ToastHelper } from '@/helpers/toastHelper'
-import { useEffect } from 'react'
-import { LocalStorageHelper } from '@/helpers/localStorageHelper'
+import { Button } from "@/components/ui/button";
+import { newUrlFormSchema, type NewUrlFormSchema } from "./NewUrlFormSchema";
+import { NewUrlForm } from "./NewUrlForm";
+import { ToastHelper, LocalStorageHelper } from "@/helpers";
+import { useEffect } from "react";
 
 export function NewUrlFormContainer() {
   const formMethods = useForm<NewUrlFormSchema>({
     resolver: zodResolver(newUrlFormSchema),
     defaultValues: {
-      url: '',
+      url: "",
       miniUrl: undefined,
     },
-    mode: 'onSubmit',
-  })
+    mode: "onSubmit",
+  });
 
   const onSubmit: SubmitHandler<NewUrlFormSchema> = (values) => {
-    const { url, miniUrl } = values
-    const response: Promise<{ data: { short_url: string } }> = new Promise(
+    const { url, miniUrl } = values;
+    const response = new Promise<{ data: { short_url: string } }>(
       (resolve, reject) => {
         axios
-          .post('/api/shorten', {
+          .post("/api/shorten", {
             url: url,
             short: miniUrl,
           })
           .then((res) => {
-            resolve(res)
+            resolve(res);
           })
           .catch((err) => {
-            reject(err)
-          })
-      }
-    )
+            reject(err);
+          });
+      },
+    );
     ToastHelper.notifyWithPromise({
       response,
-      successMessage: 'URL shortened successfully!',
-      errorMessage: 'Error shortening URL',
+      successMessage: "URL shortened successfully!",
+      errorMessage: "Error shortening URL",
       successDescription: (res) =>
-        'Your shortened URL is: ' + res.data.short_url,
+        "Your shortened URL is: " + res.data.short_url,
       successAction: (res) => {
         return (
           <Button
@@ -49,29 +48,29 @@ export function NewUrlFormContainer() {
           >
             Copy
           </Button>
-        )
+        );
       },
-    })
-  }
+    });
+  };
 
   useEffect(() => {
-    if (!LocalStorageHelper.getItem('hasDismissedWelcomeToast')) {
+    if (!LocalStorageHelper.getItem("hasDismissedWelcomeToast")) {
       ToastHelper.notify.global({
-        message: 'Welcome to MicroUrl!',
+        message: "Welcome to MicroUrl!",
         description:
           "We use cookies for authentication purposes which fall under the realm of “necessary functionality” and therefore can't be removed.",
         options: {
           onDismiss: () => {
-            LocalStorageHelper.setItem('hasDismissedWelcomeToast', 'true')
+            LocalStorageHelper.setItem("hasDismissedWelcomeToast", "true");
           },
         },
-      })
+      });
     }
-  }, [])
+  }, []);
 
   return (
     <FormProvider {...formMethods}>
       <NewUrlForm handleSubmit={formMethods.handleSubmit(onSubmit)} />
     </FormProvider>
-  )
+  );
 }

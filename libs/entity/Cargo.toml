@@ -1,7 +1,7 @@
 [package]
 name = "entity"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [lib]
@@ -14,3 +14,6 @@ sea-orm.workspace = true
 serde.workspace = true
 chrono.workspace = true
 serde_json.workspace = true
+utoipa.workspace = true
+utoipa-axum.workspace = true
+ts-rs.workspace = true

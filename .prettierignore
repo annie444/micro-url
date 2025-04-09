@@ -1,0 +1,20 @@
+# Add files here to ignore them from prettier formatting
+dist
+**/dist
+coverage
+**/coverage
+/.nx
+**/.nx
+/node_modules
+**/node_modules
+apps
+libs
+kanidm
+/.cargo
+**/.cargo
+.shuttle
+**/.shuttle
+.astro
+**/.astro
+target
+**/target

@@ -1,23 +1,25 @@
 use axum::{
-    debug_handler,
+    Json, debug_handler,
     extract::{Path, State},
-    http::StatusCode,
-    response::Redirect,
-    Json,
 };
 use entity::short_link;
-use sea_orm::{entity::*, query::*, DatabaseConnection, DbErr, RuntimeErr};
+use sea_orm::{DatabaseConnection, DbErr, RuntimeErr, entity::*, query::*};
 use tracing::{error, instrument};
 
-use crate::{error::ServerError, state::ServerState, structs::NewUrlRequest};
+use super::structs::{GetExistingUrlError, NewUrlRequest, NewUrlResponse, UpdateUrlResponse};
+use crate::{
+    state::ServerState,
+    urls::structs::{DeleteUrlResponse, GetUrlInfoResponse, GetUrlResponse},
+};
 
 // /api/shorten
 #[instrument]
 #[debug_handler]
+#[utoipa::path(post, path = "/new", context_path = super::URL_PREFIX, request_body = NewUrlRequest, responses(NewUrlResponse), tag = super::URL_TAG)]
 pub async fn new_url(
     State(mut state): State<ServerState>,
     Json(payload): Json<NewUrlRequest>,
-) -> Result<Json<short_link::Model>, ServerError> {
+) -> Result<NewUrlResponse, NewUrlResponse> {
     let short: String = payload.short.unwrap_or_else(|| state.increment());
 
     let short_url = state.url.join(&short)?;
@@ -44,12 +46,12 @@ pub async fn new_url(
                         if sql_err.is_unique_violation() {
                             get_existing_url(payload.url.clone(), &state.conn).await?
                         } else {
-                            return Err(ServerError::DatabaseError(sql_err.to_string()));
+                            return Err(NewUrlResponse::DatabaseError(sql_err.to_string().into()));
                         }
                     }
-                    _ => return Err(ServerError::DatabaseError(error.to_string())),
+                    _ => return Err(NewUrlResponse::DatabaseError(error.to_string().into())),
                 },
-                _ => return Err(ServerError::DatabaseError(err.to_string())),
+                _ => return Err(NewUrlResponse::DatabaseError(err.to_string().into())),
             },
             DbErr::Conn(err) => match err {
                 RuntimeErr::SqlxError(error) => match error {
@@ -58,12 +60,12 @@ pub async fn new_url(
                         if sql_err.is_unique_violation() {
                             get_existing_url(payload.url.clone(), &state.conn).await?
                         } else {
-                            return Err(ServerError::DatabaseError(sql_err.to_string()));
+                            return Err(NewUrlResponse::DatabaseError(sql_err.to_string().into()));
                         }
                     }
-                    _ => return Err(ServerError::DatabaseError(error.to_string())),
+                    _ => return Err(NewUrlResponse::DatabaseError(error.to_string().into())),
                 },
-                _ => return Err(ServerError::DatabaseError(err.to_string())),
+                _ => return Err(NewUrlResponse::DatabaseError(err.to_string().into())),
             },
             DbErr::Exec(err) => match err {
                 RuntimeErr::SqlxError(error) => match error {
@@ -72,37 +74,37 @@ pub async fn new_url(
                         if sql_err.is_unique_violation() {
                             get_existing_url(payload.url.clone(), &state.conn).await?
                         } else {
-                            return Err(ServerError::DatabaseError(sql_err.to_string()));
+                            return Err(NewUrlResponse::DatabaseError(sql_err.to_string().into()));
                         }
                     }
-                    _ => return Err(ServerError::DatabaseError(error.to_string())),
+                    _ => return Err(NewUrlResponse::DatabaseError(error.to_string().into())),
                 },
-                _ => return Err(ServerError::DatabaseError(err.to_string())),
+                _ => return Err(NewUrlResponse::DatabaseError(err.to_string().into())),
             },
             DbErr::RecordNotInserted => {
                 error!("Record not inserted");
                 get_existing_url(payload.url.clone(), &state.conn).await?
             }
-            _ => return Err(ServerError::DatabaseError(e.to_string())),
+            _ => return Err(NewUrlResponse::DatabaseError(e.to_string().into())),
         },
     };
 
     state.cache.put(short, payload.url);
 
-    Ok(Json(new))
+    Ok(NewUrlResponse::UrlCreated(new))
 }
 
 #[instrument]
 pub async fn get_existing_url(
     url: String,
     conn: &DatabaseConnection,
-) -> Result<short_link::Model, ServerError> {
+) -> Result<short_link::Model, GetExistingUrlError> {
     let Some(link) = short_link::Entity::find()
         .filter(short_link::Column::OriginalUrl.eq(url))
         .one(conn)
         .await?
     else {
-        return Err(ServerError::OptionError);
+        return Err(GetExistingUrlError::UrlNotFound);
     };
     Ok(link)
 }
@@ -110,63 +112,65 @@ pub async fn get_existing_url(
 // /{id}
 #[instrument]
 #[debug_handler]
+#[utoipa::path(get, path = "/{id}", params(("id", description = "The short url ID")), responses(GetUrlResponse), tag = super::URL_TAG)]
 pub async fn get_url(
     Path(id): Path<String>,
     State(mut state): State<ServerState>,
-) -> Result<Redirect, ServerError> {
+) -> Result<GetUrlResponse, GetUrlResponse> {
     if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
-        return Ok(Redirect::permanent(&id));
+        return Ok(GetUrlResponse::Redirect(id));
     }
     let url = state.cache.get(&id);
     if let Some(url) = url {
-        return Ok(Redirect::permanent(url));
+        return Ok(GetUrlResponse::Redirect(url.to_owned()));
     } else {
         let Some(short) = short_link::Entity::find()
             .filter(short_link::Column::Url.eq(&id))
             .one(&state.conn)
             .await?
         else {
-            return Err(ServerError::OptionError);
+            return Err(GetUrlResponse::UrlNotFound);
         };
         state.cache.put(id, short.original_url.clone());
-        Ok(Redirect::permanent(&short.original_url))
+        Ok(GetUrlResponse::Redirect(short.original_url))
     }
 }
 
 // /api/url/delete/{id}
 #[instrument]
 #[debug_handler]
+#[utoipa::path(delete, path = "/delete/{id}", context_path = super::URL_PREFIX, responses(DeleteUrlResponse), tag = super::URL_TAG)]
 pub async fn delete_url(
     Path(id): Path<String>,
     State(mut state): State<ServerState>,
-) -> Result<StatusCode, ServerError> {
+) -> Result<DeleteUrlResponse, DeleteUrlResponse> {
     let Some(short) = short_link::Entity::find()
         .filter(short_link::Column::Url.eq(&id))
         .one(&state.conn)
         .await?
     else {
-        return Err(ServerError::OptionError);
+        return Err(DeleteUrlResponse::UrlNotFound);
     };
     short.delete(&state.conn).await?;
     state.cache.pop(&id);
-    Ok(StatusCode::OK)
+    Ok(DeleteUrlResponse::UrlDeleted)
 }
 
 // /api/url/update/{id}
-
 #[instrument]
 #[debug_handler]
+#[utoipa::path(put, path = "/update/{id}", context_path = super::URL_PREFIX, request_body = NewUrlRequest, responses(UpdateUrlResponse), tag = super::URL_TAG)]
 pub async fn update_url(
     Path(id): Path<String>,
     State(state): State<ServerState>,
     Json(payload): Json<NewUrlRequest>,
-) -> Result<Json<short_link::Model>, ServerError> {
+) -> Result<UpdateUrlResponse, UpdateUrlResponse> {
     let Some(short) = short_link::Entity::find()
         .filter(short_link::Column::Url.eq(&id))
         .one(&state.conn)
         .await?
     else {
-        return Err(ServerError::OptionError);
+        return Err(UpdateUrlResponse::UrlNotFound);
     };
     let mut new_url = short.into_active_model();
     if let Some(short_url) = payload.short {
@@ -178,23 +182,23 @@ pub async fn update_url(
     new_url.updated_at = ActiveValue::set(chrono::Utc::now().naive_utc());
     let short = new_url.insert(&state.conn).await?;
 
-    Ok(Json(short))
+    Ok(UpdateUrlResponse::UrlUpdated(short))
 }
 
 // /api/url/{id}
-
 #[instrument]
 #[debug_handler]
+#[utoipa::path(get, path = "/{id}", context_path = super::URL_PREFIX, responses(GetUrlInfoResponse), tag = super::URL_TAG)]
 pub async fn url_info(
     Path(id): Path<String>,
     State(state): State<ServerState>,
-) -> Result<Json<short_link::Model>, ServerError> {
+) -> Result<GetUrlInfoResponse, GetUrlInfoResponse> {
     let Some(short) = short_link::Entity::find()
         .filter(short_link::Column::Url.eq(&id))
         .one(&state.conn)
         .await?
     else {
-        return Err(ServerError::OptionError);
+        return Err(GetUrlInfoResponse::UrlNotFound);
     };
-    Ok(Json(short))
+    Ok(GetUrlInfoResponse::Url(short))
 }

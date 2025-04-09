@@ -22,15 +22,31 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: '.node-version'
-          cache: 'pnpm'
+          node-version-file: ".node-version"
+          cache: "pnpm"
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Restore NX cache
+        id: cache-nx-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx
+
       - uses: nrwl/nx-set-shas@v4
 
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
-      - run: pnpm exec nx affected -t lint test build
+      - run: pnpm exec nx affected -t lint
+      - run: pnpm exec nx affected -t test
+      - run: pnpm exec nx affected -t build
+
+      - name: Save NX cache
+        id: cache-nx-save
+        uses: actions/cache/save@v4
+        with:
+          path: .nx/cache
+          key: ${{ steps.cache-nx-restore.outputs.cache-primary-key }}

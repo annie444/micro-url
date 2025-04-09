@@ -7,8 +7,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "lint": "prettier --check .",
-    "format": "prettier --write ."
+    "lint": "eslint . && prettier --check .",
+    "format": "eslint . --fix && prettier --write ."
   },
   "dependencies": {
     "@astrojs/mdx": "^4.2.2",

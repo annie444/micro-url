@@ -62,5 +62,13 @@ playwright/.cache/
 .DS_Store
 Thumbs.db
 
-# Kanidm OIDC database
-kanidm.db*
+/kanidm/kanidm.db*
+!/kanidm/kanidm.db
+!/kanidm/kanidm.db.klock
+
+.nx/cache
+.nx/workspace-data
+/target
+.shuttle*
+Secrets*.toml
+!Secrets.example.toml

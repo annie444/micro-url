@@ -1,15 +1,15 @@
-const currentYear = new Date().getFullYear()
+const currentYear = new Date().getFullYear();
 
 export function Footer() {
   return (
-    <footer className="bg-black text-white py-6 h-fit">
+    <footer className="h-fit bg-black py-6 text-white">
       <div className="container mx-auto text-center">
         <p>&copy; {currentYear} All rights reserved.</p>
-        <ul className="flex justify-center space-x-6 mt-4">
+        <ul className="mt-4 flex justify-center space-x-6">
           <li>
             <a
               href="https://github.com/annie444/micro-url"
-              className="hover:underline hover:text-emerald-400"
+              className="hover:text-emerald-400 hover:underline"
             >
               GitHub
             </a>
@@ -17,7 +17,7 @@ export function Footer() {
           <li>
             <a
               href="https://github.com/annie444"
-              className="hover:underline hover:text-emerald-400"
+              className="hover:text-emerald-400 hover:underline"
             >
               Annie Ehler
             </a>
@@ -25,7 +25,7 @@ export function Footer() {
           <li>
             <a
               href="https://github.com/kip-west"
-              className="hover:underline hover:text-emerald-400"
+              className="hover:text-emerald-400 hover:underline"
             >
               Kip West
             </a>
@@ -33,5 +33,5 @@ export function Footer() {
         </ul>
       </div>
     </footer>
-  )
+  );
 }
