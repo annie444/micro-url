@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 #[sea_orm(table_name = "views")]
 #[ts(export)]
 #[ts(export_to = "../../../js/frontend/src/lib/types/")]
-#[ts(rename = "ShortLink")]
+#[ts(rename = "Views")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
