@@ -10,6 +10,8 @@ use axum::{
 #[cfg(feature = "ips")]
 use axum_client_ip::ClientIp;
 use entity::{short_link, views};
+#[cfg(feature = "ips")]
+use sea_orm::prelude::IpNetwork;
 use sea_orm::{DatabaseConnection, DbErr, RuntimeErr, entity::*, query::*};
 #[cfg(feature = "headers")]
 use serde_json::json;
@@ -249,7 +251,7 @@ fn update_views(id: String, cached: bool, ip: IpAddr, conn: DatabaseConnection) 
     tokio::spawn(async move {
         let view = views::ActiveModel {
             short_link: ActiveValue::Set(id.clone()),
-            ip: ActiveValue::Set(Some(ip.to_canonical().to_string())),
+            ip: ActiveValue::Set(IpNetwork::new(ip, 0).ok()),
             cache_hit: ActiveValue::Set(cached),
             created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
             ..Default::default()
@@ -307,7 +309,7 @@ fn update_views(
         };
         let view = views::ActiveModel {
             short_link: ActiveValue::Set(id.clone()),
-            ip: ActiveValue::Set(Some(ip.to_canonical().to_string())),
+            ip: ActiveValue::Set(IpNetwork::new(ip, 0).ok()),
             headers: ActiveValue::Set(Some(json!(headers))),
             cache_hit: ActiveValue::Set(cached),
             created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),

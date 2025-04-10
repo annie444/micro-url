@@ -21,7 +21,7 @@ install:
   fi
   # Install sea-orm-cli
   if ! command -v sea-orm-cli &> /dev/null; then
-    cargo install sea-orm-cli
+    cargo install sea-orm-cli -F async-std,cli,codegen,sea-orm-codegen,postgres-vector,runtime-tokio-native-tls
   fi
   # Install shuttle
   if ! command -v shuttle &> /dev/null; then

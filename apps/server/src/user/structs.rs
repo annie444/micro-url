@@ -322,7 +322,7 @@ impl From<views::Model> for UserView {
         Self {
             id: vi.id,
             headers: headers.map(|v| v.0),
-            ip: vi.ip,
+            ip: vi.ip.map(|ip| ip.ip().to_string()),
             cache_hit: vi.cache_hit,
             created_at: vi.created_at,
         }
@@ -335,7 +335,7 @@ impl From<views::Model> for UserView {
         Self {
             id: vi.id,
             headers: None,
-            ip: vi.ip,
+            ip: vi.ip.map(|ip| ip.ip().to_string()),
             cache_hit: vi.cache_hit,
             created_at: vi.created_at,
         }
