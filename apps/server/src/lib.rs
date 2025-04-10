@@ -65,10 +65,8 @@ impl MakeRequestId for MicroUrlMakeRequestId {
 pub async fn run(config: ServerConfig) {
     init_subscriber();
     let app = init_router(config.clone(), None).await;
-    let addr = SocketAddr::from_str(&config.internal_url.as_str()).expect(&format!(
-        "Unable to parse socket {}",
-        &config.internal_url.as_str()
-    ));
+    let addr = SocketAddr::from_str(config.internal_url.as_str())
+        .unwrap_or_else(|_| panic!("Unable to parse socket {}", &config.internal_url.as_str()));
     info!("Listening on {}", addr);
     let listen = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(
@@ -121,12 +119,7 @@ pub async fn init_router(config: config::ServerConfig, state: Option<ServerState
 }
 
 #[cfg(feature = "ips")]
-#[tracing::instrument]
-pub(crate) fn build_layers(
-    x_request_id: HeaderName,
-    trace_layer: TraceLayer<SharedClassifier<ServerErrorsAsFailures>, MicroUrlMakeSpan>,
-    config: &ServerConfig,
-) -> ServiceBuilder<
+type MicroUrlServiceBuilder = ServiceBuilder<
     Stack<
         axum::Extension<ClientIpSource>,
         Stack<
@@ -140,7 +133,15 @@ pub(crate) fn build_layers(
             >,
         >,
     >,
-> {
+>;
+
+#[cfg(feature = "ips")]
+#[tracing::instrument]
+pub(crate) fn build_layers(
+    x_request_id: HeaderName,
+    trace_layer: TraceLayer<SharedClassifier<ServerErrorsAsFailures>, MicroUrlMakeSpan>,
+    config: &ServerConfig,
+) -> MicroUrlServiceBuilder {
     ServiceBuilder::new()
         .layer(SetRequestIdLayer::new(
             x_request_id.clone(),
@@ -153,12 +154,7 @@ pub(crate) fn build_layers(
 }
 
 #[cfg(not(feature = "ips"))]
-#[tracing::instrument]
-pub(crate) fn build_layers(
-    x_request_id: HeaderName,
-    trace_layer: TraceLayer<SharedClassifier<ServerErrorsAsFailures>, MicroUrlMakeSpan>,
-    config: &ServerConfig,
-) -> ServiceBuilder<
+type MicroUrlServiceBuilder = ServiceBuilder<
     Stack<
         CompressionLayer,
         Stack<
@@ -169,7 +165,15 @@ pub(crate) fn build_layers(
             >,
         >,
     >,
-> {
+>;
+
+#[cfg(not(feature = "ips"))]
+#[tracing::instrument]
+pub(crate) fn build_layers(
+    x_request_id: HeaderName,
+    trace_layer: TraceLayer<SharedClassifier<ServerErrorsAsFailures>, MicroUrlMakeSpan>,
+    config: &ServerConfig,
+) -> MicroUrlServiceBuilder {
     ServiceBuilder::new()
         .layer(SetRequestIdLayer::new(
             x_request_id.clone(),

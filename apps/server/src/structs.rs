@@ -58,11 +58,7 @@ impl From<JsonValue> for HeaderMapDef {
             fn map_named_value(map: &mut BTreeMap<String, Vec<String>>, name: String, val: Value) {
                 match val {
                     JsonValue::Null => {
-                        if map.contains_key(&name) {
-                            ()
-                        } else {
-                            map.insert(name, vec![]);
-                        }
+                        map.entry(name).or_default();
                     }
                     JsonValue::Number(n) => {
                         if let Some(val) = map.get_mut(&name) {

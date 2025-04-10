@@ -42,7 +42,6 @@ pub async fn new_url(
         original_url: ActiveValue::set(payload.url.clone()),
         created_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
         updated_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
-        ..Default::default()
     };
 
     let new = match new_url.insert(&state.conn).await {
