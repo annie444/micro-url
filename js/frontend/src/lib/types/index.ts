@@ -28,3 +28,4 @@ export * from "./LogoutResponseType.ts";
 export * from "./NewUserRequest.ts";
 export * from "./UserPass.ts";
 export * from "./UserView.ts";
+export * from "./Views.ts";
