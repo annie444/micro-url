@@ -9,6 +9,8 @@ pub mod user;
 
 use std::{
     env::current_dir,
+    net::SocketAddr,
+    str::FromStr,
     sync::{
         Arc,
         atomic::{AtomicU64, Ordering},
@@ -63,10 +65,18 @@ impl MakeRequestId for MicroUrlMakeRequestId {
 pub async fn run(config: ServerConfig) {
     init_subscriber();
     let app = init_router(config.clone(), None).await;
-    let addr = config.internal_url;
+    let addr = SocketAddr::from_str(&config.internal_url.as_str()).expect(&format!(
+        "Unable to parse socket {}",
+        &config.internal_url.as_str()
+    ));
     info!("Listening on {}", addr);
     let listen = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listen, app.into_make_service()).await.unwrap();
+    axum::serve(
+        listen,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }
 
 #[tracing::instrument]
