@@ -8,48 +8,30 @@ use serde::{Deserialize, Serialize};
     Debug,
     PartialEq,
     DeriveEntityModel,
-    Eq,
     Serialize,
     Deserialize,
     utoipa :: ToSchema,
     ts_rs :: TS,
 )]
-#[sea_orm(table_name = "short_link")]
+#[sea_orm(table_name = "location")]
 #[ts(export)]
 #[ts(export_to = "../../../js/frontend/src/lib/types/")]
-#[ts(rename = "ShortLink")]
+#[ts(rename = "Location")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    #[sea_orm(unique)]
-    pub url: String,
-    #[sea_orm(unique)]
-    pub short_url: String,
-    pub original_url: String,
-    pub user_id: Option<Uuid>,
-    pub expiry_date: Option<DateTime>,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
+    #[sea_orm(column_type = "Double", nullable)]
+    pub latitude: Option<f64>,
+    #[sea_orm(column_type = "Double", nullable)]
+    pub longitude: Option<f64>,
+    pub metro_code: Option<i32>,
+    pub time_code: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::user::Entity",
-        from = "Column::UserId",
-        to = "super::user::Column::UserId",
-        on_update = "Cascade",
-        on_delete = "Cascade"
-    )]
-    User,
     #[sea_orm(has_many = "super::views::Entity")]
     Views,
-}
-
-impl Related<super::user::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::User.def()
-    }
 }
 
 impl Related<super::views::Entity> for Entity {

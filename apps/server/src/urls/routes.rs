@@ -2,9 +2,9 @@ use axum::{
     Json, debug_handler,
     extract::{Path, State},
 };
-use entity::short_link;
+use entity::{short_link, views};
 use sea_orm::{DatabaseConnection, DbErr, RuntimeErr, entity::*, query::*};
-use tracing::{error, instrument};
+use tracing::{error, instrument, trace};
 
 use super::structs::{GetExistingUrlError, NewUrlRequest, NewUrlResponse, UpdateUrlResponse};
 use crate::{
@@ -33,7 +33,6 @@ pub async fn new_url(
         original_url: ActiveValue::set(payload.url.clone()),
         created_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
         updated_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
-        views: ActiveValue::set(0),
     };
 
     let new = match new_url.insert(&state.conn).await {
@@ -117,12 +116,11 @@ pub async fn get_url(
     Path(id): Path<String>,
     State(mut state): State<ServerState>,
 ) -> Result<GetUrlResponse, GetUrlResponse> {
+    update_views(id.clone(), state.conn.clone());
     if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
-        return Ok(GetUrlResponse::Redirect(id));
-    }
-    let url = state.cache.get(&id);
-    if let Some(url) = url {
-        return Ok(GetUrlResponse::Redirect(url.to_owned()));
+        Ok(GetUrlResponse::Redirect(id))
+    } else if let Some(url) = state.cache.get(&id) {
+        Ok(GetUrlResponse::Redirect(url.to_owned()))
     } else {
         let Some(short) = short_link::Entity::find()
             .filter(short_link::Column::Url.eq(&id))
@@ -136,10 +134,45 @@ pub async fn get_url(
     }
 }
 
+#[instrument]
+pub(super) fn update_views(id: String, conn: DatabaseConnection) {
+    tokio::spawn(async move {
+        let url_id = id.clone();
+        match conn
+            .transaction::<_, (), DbErr>(|txn| {
+                Box::pin(async move {
+                    match views::Entity::find()
+                        .right_join(short_link::Entity)
+                        .filter(short_link::Column::Url.eq(&url_id))
+                        .one(txn)
+                        .await?
+                    {
+                        Some(views) => {
+                            let num_views = views.num_views + 1;
+                            let mut views = views.into_active_model();
+                            views.num_views = ActiveValue::Set(num_views);
+                            views.update(txn).await?;
+                            Ok(())
+                        }
+                        None => {
+                            error!("Unable to find URL ID in the database: {}", &url_id);
+                            Ok(())
+                        }
+                    }
+                })
+            })
+            .await
+        {
+            Ok(_) => trace!("Views updated successfully for url {}", id),
+            Err(e) => error!("Error updating views for url {}: {}", id, e.to_string()),
+        };
+    });
+}
+
 // /api/url/delete/{id}
 #[instrument]
 #[debug_handler]
-#[utoipa::path(delete, path = "/delete/{id}", context_path = super::URL_PREFIX, responses(DeleteUrlResponse), tag = super::URL_TAG)]
+#[utoipa::path(delete, path = "/delete/{id}", params(("id", description = "The short url ID")), context_path = super::URL_PREFIX, responses(DeleteUrlResponse), tag = super::URL_TAG)]
 pub async fn delete_url(
     Path(id): Path<String>,
     State(mut state): State<ServerState>,
@@ -159,7 +192,7 @@ pub async fn delete_url(
 // /api/url/update/{id}
 #[instrument]
 #[debug_handler]
-#[utoipa::path(put, path = "/update/{id}", context_path = super::URL_PREFIX, request_body = NewUrlRequest, responses(UpdateUrlResponse), tag = super::URL_TAG)]
+#[utoipa::path(put, path = "/update/{id}", params(("id", description = "The short url ID")), context_path = super::URL_PREFIX, request_body = NewUrlRequest, responses(UpdateUrlResponse), tag = super::URL_TAG)]
 pub async fn update_url(
     Path(id): Path<String>,
     State(state): State<ServerState>,
@@ -188,7 +221,7 @@ pub async fn update_url(
 // /api/url/{id}
 #[instrument]
 #[debug_handler]
-#[utoipa::path(get, path = "/{id}", context_path = super::URL_PREFIX, responses(GetUrlInfoResponse), tag = super::URL_TAG)]
+#[utoipa::path(get, path = "/{id}", params(("id", description = "The short url ID")), context_path = super::URL_PREFIX, responses(GetUrlInfoResponse), tag = super::URL_TAG)]
 pub async fn url_info(
     Path(id): Path<String>,
     State(state): State<ServerState>,

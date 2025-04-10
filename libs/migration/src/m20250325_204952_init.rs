@@ -19,9 +19,35 @@ impl MigrationTrait for Migration {
                     .col(string(ShortLink::OriginalUrl))
                     .col(uuid_null(ShortLink::UserId))
                     .col(timestamp_null(ShortLink::ExpiryDate))
-                    .col(big_unsigned(ShortLink::Views).default(0))
                     .col(timestamp(ShortLink::CreatedAt))
                     .col(timestamp(ShortLink::UpdatedAt))
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(Views::Table)
+                    .if_not_exists()
+                    .col(pk_auto(Views::Id))
+                    .col(integer(Views::ShortLink).not_null())
+                    .col(integer(Views::NumViews).not_null().default(0))
+                    .col(json_binary_null(Views::Headers))
+                    .col(string_null(Views::IpAddress))
+                    .col(integer_null(Views::IpLocation))
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(Location::Table)
+                    .if_not_exists()
+                    .col(pk_auto(Location::Id))
+                    .col(double_null(Location::Latitude))
+                    .col(double_null(Location::Longitude))
+                    .col(integer_null(Location::MetroCode))
+                    .col(string_null(Location::TimeCode))
                     .to_owned(),
             )
             .await?;
@@ -64,9 +90,9 @@ impl MigrationTrait for Migration {
         manager
             .create_index(
                 Index::create()
-                    .table(ShortLink::Table)
-                    .name(ShortLinkIdx::ShortUrl)
-                    .col(ShortLink::ShortUrl)
+                    .table(Views::Table)
+                    .name(ViewsIdx::ShortLink)
+                    .col(Views::ShortLink)
                     .to_owned(),
             )
             .await?;
@@ -74,8 +100,8 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .table(ShortLink::Table)
-                    .name(ShortLinkIdx::OriginalUrl)
-                    .col(ShortLink::OriginalUrl)
+                    .name(ShortLinkIdx::ShortUrl)
+                    .col(ShortLink::ShortUrl)
                     .to_owned(),
             )
             .await?;
@@ -138,6 +164,28 @@ impl MigrationTrait for Migration {
                     .on_update(ForeignKeyAction::Cascade)
                     .to_owned(),
             )
+            .await?;
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name(ViewsFk::ShortLink)
+                    .from(Views::Table, Views::ShortLink)
+                    .to(ShortLink::Table, ShortLink::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .on_update(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name(ViewsFk::IpLocation)
+                    .from(Views::Table, Views::IpLocation)
+                    .to(Location::Table, Location::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .on_update(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
             .await
     }
 
@@ -147,14 +195,6 @@ impl MigrationTrait for Migration {
                 Index::drop()
                     .table(ShortLink::Table)
                     .name(ShortLinkIdx::Url)
-                    .to_owned(),
-            )
-            .await?;
-        manager
-            .drop_index(
-                Index::drop()
-                    .table(ShortLink::Table)
-                    .name(ShortLinkIdx::OriginalUrl)
                     .to_owned(),
             )
             .await?;
@@ -179,6 +219,30 @@ impl MigrationTrait for Migration {
                 Index::drop()
                     .table(Sessions::Table)
                     .name(SessionsIdx::SessionId)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_index(
+                Index::drop()
+                    .table(Views::Table)
+                    .name(ViewsIdx::ShortLink)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .table(Views::Table)
+                    .name(ViewsFk::IpLocation)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .table(Views::Table)
+                    .name(ViewsFk::ShortLink)
                     .to_owned(),
             )
             .await?;
@@ -217,6 +281,12 @@ impl MigrationTrait for Migration {
             .await?;
         manager
             .drop_table(Table::drop().table(User::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(Location::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(Views::Table).to_owned())
             .await
     }
 }
@@ -314,12 +384,10 @@ enum ShortLink {
     ExpiryDate,
     CreatedAt,
     UpdatedAt,
-    Views,
 }
 
 enum ShortLinkIdx {
     Url,
-    OriginalUrl,
     ShortUrl,
     ExpiryDate,
 }
@@ -328,7 +396,6 @@ impl Display for ShortLinkIdx {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Url => write!(f, "idx_url"),
-            Self::OriginalUrl => write!(f, "idx_original_url"),
             Self::ShortUrl => write!(f, "idx_short_url"),
             Self::ExpiryDate => write!(f, "idx_expiry_date"),
         }
@@ -357,4 +424,63 @@ impl From<ShortLinkFk> for String {
     fn from(fk: ShortLinkFk) -> Self {
         fk.to_string()
     }
+}
+
+#[derive(DeriveIden)]
+enum Views {
+    Table,
+    Id,
+    ShortLink,
+    NumViews,
+    Headers,
+    IpAddress,
+    IpLocation,
+}
+
+enum ViewsFk {
+    ShortLink,
+    IpLocation,
+}
+
+impl Display for ViewsFk {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::ShortLink => write!(f, "fk_short_link"),
+            Self::IpLocation => write!(f, "fk_ip_location"),
+        }
+    }
+}
+
+impl From<ViewsFk> for String {
+    fn from(vi: ViewsFk) -> Self {
+        vi.to_string()
+    }
+}
+
+enum ViewsIdx {
+    ShortLink,
+}
+
+impl Display for ViewsIdx {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::ShortLink => write!(f, "idx_short_link"),
+        }
+    }
+}
+
+impl From<ViewsIdx> for String {
+    fn from(vi: ViewsIdx) -> Self {
+        vi.to_string()
+    }
+}
+
+#[derive(DeriveIden)]
+enum Location {
+    Table,
+    Id,
+    Latitude,
+    Longitude,
+    MetroCode,
+    TimeCode,
 }

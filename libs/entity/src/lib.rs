@@ -2,7 +2,9 @@
 
 pub mod prelude;
 
+pub mod location;
 pub mod sessions;
 pub mod short_link;
 pub mod user;
 pub mod user_pass;
+pub mod views;
