@@ -78,6 +78,13 @@ test:
 nx *args:
   pnpm exec nx {{args}}
 
+[doc("formats all files")]
+format:
+  pnpm exec eslint . --fix 
+  pnpm exec prettier --write .
+  cargo clippy --fix
+  cargo fmt --all
+
 [doc("Runs the project in dev mode (`no hot-reloading`)")]
 [group("dev")]
 run $RUST_LOG="trace": oidc-up (nx "run frontend:build")
