@@ -1,12 +1,10 @@
 use axum::{debug_handler, extract::State};
 use axum_extra::extract::cookie::PrivateCookieJar;
-use entity::{sessions, short_link, user};
+use entity::{sessions, short_link, user, views};
 use sea_orm::{entity::*, query::*};
 use tracing::instrument;
 
-use super::structs::{
-    LogoutResponse, UserLinks, UserLinksResponse, UserProfile, UserProfileResponse,
-};
+use super::structs::{LogoutResponse, UserLinksResponse, UserProfile, UserProfileResponse};
 use crate::state::ServerState;
 
 // /auth/logout
@@ -124,8 +122,9 @@ pub async fn get_user_urls(
 
     let res = short_link::Entity::find()
         .filter(short_link::Column::UserId.eq(res.user_id))
+        .find_with_related(views::Entity)
         .all(&state.conn)
         .await?;
 
-    Ok(UserLinksResponse::UserLinks(UserLinks { urls: res }))
+    Ok(UserLinksResponse::UserLinks(res.into()))
 }

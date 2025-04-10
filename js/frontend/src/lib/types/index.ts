@@ -23,3 +23,8 @@ export * from "./UserLinks.ts";
 export * from "./UserLinksResponse.ts";
 export * from "./UserProfile.ts";
 export * from "./UserProfileResponse.ts";
+export * from "./HeaderMapDef.ts";
+export * from "./LogoutResponseType.ts";
+export * from "./NewUserRequest.ts";
+export * from "./UserPass.ts";
+export * from "./UserView.ts";

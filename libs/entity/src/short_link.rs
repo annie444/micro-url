@@ -19,14 +19,14 @@ use serde::{Deserialize, Serialize};
 #[ts(export_to = "../../../js/frontend/src/lib/types/")]
 #[ts(rename = "ShortLink")]
 pub struct Model {
-    #[sea_orm(primary_key)]
-    pub id: i32,
-    #[sea_orm(unique)]
-    pub url: String,
+    #[sea_orm(primary_key, auto_increment = false)]
+    pub id: String,
     #[sea_orm(unique)]
     pub short_url: String,
     pub original_url: String,
+    #[ts(optional)]
     pub user_id: Option<Uuid>,
+    #[ts(optional)]
     pub expiry_date: Option<DateTime>,
     pub created_at: DateTime,
     pub updated_at: DateTime,

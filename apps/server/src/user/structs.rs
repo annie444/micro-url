@@ -1,4 +1,4 @@
-use std::num::TryFromIntError;
+use std::{collections::BTreeMap, num::TryFromIntError};
 
 use axum::{
     Json,
@@ -6,7 +6,8 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::cookie::PrivateCookieJar;
-use entity::{short_link, user};
+use chrono::NaiveDateTime;
+use entity::{short_link, user, views};
 use openidconnect::{
     ClaimsVerificationError, ConfigurationError, HttpClientError, RequestTokenError,
     SignatureVerificationError, SigningError, StandardErrorResponse, UserInfoError,
@@ -16,7 +17,10 @@ use sea_orm::{DerivePartialModel, FromQueryResult};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use utoipa::{IntoParams, IntoResponses, ToSchema};
+use uuid::Uuid;
 
+#[cfg(feature = "headers")]
+use crate::structs::HeaderMapDef;
 use crate::structs::{BasicError, BasicResponse};
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
@@ -252,7 +256,90 @@ impl IntoResponse for UserProfileResponse {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
 #[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct UserLinks {
-    pub urls: Vec<short_link::Model>,
+    pub urls: Vec<UserLink>,
+}
+
+impl From<Vec<(short_link::Model, Vec<views::Model>)>> for UserLinks {
+    fn from(models: Vec<(short_link::Model, Vec<views::Model>)>) -> Self {
+        Self {
+            urls: models
+                .iter()
+                .map(|v| v.to_owned().into())
+                .collect::<Vec<UserLink>>(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+pub struct UserLink {
+    pub id: String,
+    pub short_url: String,
+    pub original_url: String,
+    pub user_id: Uuid,
+    #[ts(optional)]
+    pub expiry_date: Option<NaiveDateTime>,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+    pub views: Vec<UserView>,
+}
+
+impl From<(short_link::Model, Vec<views::Model>)> for UserLink {
+    fn from(values: (short_link::Model, Vec<views::Model>)) -> Self {
+        let (sl, vi) = values;
+        Self {
+            id: sl.id,
+            short_url: sl.short_url,
+            original_url: sl.original_url,
+            user_id: sl.user_id.unwrap(),
+            expiry_date: sl.expiry_date,
+            created_at: sl.created_at,
+            updated_at: sl.updated_at,
+            views: vi
+                .iter()
+                .map(|v| v.to_owned().into())
+                .collect::<Vec<UserView>>(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+pub struct UserView {
+    pub id: i32,
+    #[ts(optional)]
+    pub headers: Option<BTreeMap<String, Vec<String>>>,
+    #[ts(optional)]
+    pub ip: Option<String>,
+    pub cache_hit: bool,
+    pub created_at: NaiveDateTime,
+}
+
+#[cfg(feature = "headers")]
+impl From<views::Model> for UserView {
+    fn from(vi: views::Model) -> Self {
+        let headers: Option<HeaderMapDef> = vi.headers.map(|val| val.into());
+        Self {
+            id: vi.id,
+            headers: headers.map(|v| v.0),
+            ip: vi.ip,
+            cache_hit: vi.cache_hit,
+            created_at: vi.created_at,
+        }
+    }
+}
+
+#[cfg(not(feature = "headers"))]
+impl From<views::Model> for UserView {
+    fn from(vi: views::Model) -> Self {
+        Self {
+            id: vi.id,
+            headers: None,
+            ip: vi.ip,
+            cache_hit: vi.cache_hit,
+            created_at: vi.created_at,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]

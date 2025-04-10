@@ -1,6 +1,6 @@
-use std::fmt::{Display, Formatter};
-
 use sea_orm_migration::{prelude::*, schema::*};
+
+use crate::table_types::*;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -13,8 +13,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(ShortLink::Table)
                     .if_not_exists()
-                    .col(pk_auto(ShortLink::Id))
-                    .col(string(ShortLink::Url).unique_key())
+                    .col(string(ShortLink::Id).primary_key().not_null().unique_key())
                     .col(string(ShortLink::ShortUrl).unique_key())
                     .col(string(ShortLink::OriginalUrl))
                     .col(uuid_null(ShortLink::UserId))
@@ -30,24 +29,11 @@ impl MigrationTrait for Migration {
                     .table(Views::Table)
                     .if_not_exists()
                     .col(pk_auto(Views::Id))
-                    .col(integer(Views::ShortLink).not_null())
-                    .col(integer(Views::NumViews).not_null().default(0))
+                    .col(string(Views::ShortLink).not_null())
                     .col(json_binary_null(Views::Headers))
-                    .col(string_null(Views::IpAddress))
-                    .col(integer_null(Views::IpLocation))
-                    .to_owned(),
-            )
-            .await?;
-        manager
-            .create_table(
-                Table::create()
-                    .table(Location::Table)
-                    .if_not_exists()
-                    .col(pk_auto(Location::Id))
-                    .col(double_null(Location::Latitude))
-                    .col(double_null(Location::Longitude))
-                    .col(integer_null(Location::MetroCode))
-                    .col(string_null(Location::TimeCode))
+                    .col(ColumnDef::new(Views::Ip).inet().null())
+                    .col(boolean(Views::CacheHit))
+                    .col(timestamp(Views::CreatedAt))
                     .to_owned(),
             )
             .await?;
@@ -90,27 +76,9 @@ impl MigrationTrait for Migration {
         manager
             .create_index(
                 Index::create()
-                    .table(Views::Table)
-                    .name(ViewsIdx::ShortLink)
-                    .col(Views::ShortLink)
-                    .to_owned(),
-            )
-            .await?;
-        manager
-            .create_index(
-                Index::create()
                     .table(ShortLink::Table)
                     .name(ShortLinkIdx::ShortUrl)
                     .col(ShortLink::ShortUrl)
-                    .to_owned(),
-            )
-            .await?;
-        manager
-            .create_index(
-                Index::create()
-                    .table(ShortLink::Table)
-                    .name(ShortLinkIdx::Url)
-                    .col(ShortLink::Url)
                     .to_owned(),
             )
             .await?;
@@ -175,29 +143,10 @@ impl MigrationTrait for Migration {
                     .on_update(ForeignKeyAction::Cascade)
                     .to_owned(),
             )
-            .await?;
-        manager
-            .create_foreign_key(
-                ForeignKey::create()
-                    .name(ViewsFk::IpLocation)
-                    .from(Views::Table, Views::IpLocation)
-                    .to(Location::Table, Location::Id)
-                    .on_delete(ForeignKeyAction::Cascade)
-                    .on_update(ForeignKeyAction::Cascade)
-                    .to_owned(),
-            )
             .await
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        manager
-            .drop_index(
-                Index::drop()
-                    .table(ShortLink::Table)
-                    .name(ShortLinkIdx::Url)
-                    .to_owned(),
-            )
-            .await?;
         manager
             .drop_index(
                 Index::drop()
@@ -219,30 +168,6 @@ impl MigrationTrait for Migration {
                 Index::drop()
                     .table(Sessions::Table)
                     .name(SessionsIdx::SessionId)
-                    .to_owned(),
-            )
-            .await?;
-        manager
-            .drop_index(
-                Index::drop()
-                    .table(Views::Table)
-                    .name(ViewsIdx::ShortLink)
-                    .to_owned(),
-            )
-            .await?;
-        manager
-            .drop_foreign_key(
-                ForeignKey::drop()
-                    .table(Views::Table)
-                    .name(ViewsFk::IpLocation)
-                    .to_owned(),
-            )
-            .await?;
-        manager
-            .drop_foreign_key(
-                ForeignKey::drop()
-                    .table(Views::Table)
-                    .name(ViewsFk::ShortLink)
                     .to_owned(),
             )
             .await?;
@@ -271,6 +196,14 @@ impl MigrationTrait for Migration {
             )
             .await?;
         manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .table(Views::Table)
+                    .name(ViewsFk::ShortLink)
+                    .to_owned(),
+            )
+            .await?;
+        manager
             .drop_table(Table::drop().table(ShortLink::Table).to_owned())
             .await?;
         manager
@@ -283,204 +216,7 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(User::Table).to_owned())
             .await?;
         manager
-            .drop_table(Table::drop().table(Location::Table).to_owned())
-            .await?;
-        manager
             .drop_table(Table::drop().table(Views::Table).to_owned())
             .await
     }
-}
-
-#[derive(DeriveIden)]
-#[allow(clippy::enum_variant_names)]
-enum User {
-    Table,
-    UserId,
-    Name,
-    Email,
-    CreatedAt,
-    UpdatedAt,
-}
-
-#[derive(DeriveIden)]
-enum UserPass {
-    Table,
-    Id,
-    UserId,
-    Password,
-}
-
-enum UserPassFk {
-    UserId,
-}
-
-impl Display for UserPassFk {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::UserId => write!(f, "fk_user_id"),
-        }
-    }
-}
-
-impl From<UserPassFk> for String {
-    fn from(fk: UserPassFk) -> Self {
-        fk.to_string()
-    }
-}
-
-#[derive(DeriveIden)]
-enum Sessions {
-    Table,
-    Id,
-    SessionId,
-    UserId,
-    Expiry,
-}
-
-enum SessionsIdx {
-    SessionId,
-}
-
-impl Display for SessionsIdx {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::SessionId => write!(f, "idx_session_id"),
-        }
-    }
-}
-
-impl From<SessionsIdx> for String {
-    fn from(idx: SessionsIdx) -> Self {
-        idx.to_string()
-    }
-}
-
-enum SessionsFk {
-    UserId,
-}
-
-impl Display for SessionsFk {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::UserId => write!(f, "fk_user_id"),
-        }
-    }
-}
-
-impl From<SessionsFk> for String {
-    fn from(fk: SessionsFk) -> Self {
-        fk.to_string()
-    }
-}
-
-#[derive(DeriveIden)]
-enum ShortLink {
-    Table,
-    Id,
-    Url,
-    ShortUrl,
-    OriginalUrl,
-    UserId,
-    ExpiryDate,
-    CreatedAt,
-    UpdatedAt,
-}
-
-enum ShortLinkIdx {
-    Url,
-    ShortUrl,
-    ExpiryDate,
-}
-
-impl Display for ShortLinkIdx {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Url => write!(f, "idx_url"),
-            Self::ShortUrl => write!(f, "idx_short_url"),
-            Self::ExpiryDate => write!(f, "idx_expiry_date"),
-        }
-    }
-}
-
-impl From<ShortLinkIdx> for String {
-    fn from(idx: ShortLinkIdx) -> Self {
-        idx.to_string()
-    }
-}
-
-enum ShortLinkFk {
-    UserId,
-}
-
-impl Display for ShortLinkFk {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::UserId => write!(f, "fk_user_id"),
-        }
-    }
-}
-
-impl From<ShortLinkFk> for String {
-    fn from(fk: ShortLinkFk) -> Self {
-        fk.to_string()
-    }
-}
-
-#[derive(DeriveIden)]
-enum Views {
-    Table,
-    Id,
-    ShortLink,
-    NumViews,
-    Headers,
-    IpAddress,
-    IpLocation,
-}
-
-enum ViewsFk {
-    ShortLink,
-    IpLocation,
-}
-
-impl Display for ViewsFk {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::ShortLink => write!(f, "fk_short_link"),
-            Self::IpLocation => write!(f, "fk_ip_location"),
-        }
-    }
-}
-
-impl From<ViewsFk> for String {
-    fn from(vi: ViewsFk) -> Self {
-        vi.to_string()
-    }
-}
-
-enum ViewsIdx {
-    ShortLink,
-}
-
-impl Display for ViewsIdx {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::ShortLink => write!(f, "idx_short_link"),
-        }
-    }
-}
-
-impl From<ViewsIdx> for String {
-    fn from(vi: ViewsIdx) -> Self {
-        vi.to_string()
-    }
-}
-
-#[derive(DeriveIden)]
-enum Location {
-    Table,
-    Id,
-    Latitude,
-    Longitude,
-    MetroCode,
-    TimeCode,
 }

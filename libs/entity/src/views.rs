@@ -17,28 +17,23 @@ use serde::{Deserialize, Serialize};
 #[sea_orm(table_name = "views")]
 #[ts(export)]
 #[ts(export_to = "../../../js/frontend/src/lib/types/")]
-#[ts(rename = "Views")]
+#[ts(rename = "ShortLink")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    pub short_link: i32,
-    pub num_views: i32,
+    pub short_link: String,
     #[sea_orm(column_type = "JsonBinary", nullable)]
+    #[ts(optional)]
     pub headers: Option<Json>,
-    pub ip_address: Option<String>,
-    pub ip_location: Option<i32>,
+    #[sea_orm(column_type = "custom(\"inet\")", nullable)]
+    #[ts(optional)]
+    pub ip: Option<String>,
+    pub cache_hit: bool,
+    pub created_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::location::Entity",
-        from = "Column::IpLocation",
-        to = "super::location::Column::Id",
-        on_update = "Cascade",
-        on_delete = "Cascade"
-    )]
-    Location,
     #[sea_orm(
         belongs_to = "super::short_link::Entity",
         from = "Column::ShortLink",
@@ -47,12 +42,6 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     ShortLink,
-}
-
-impl Related<super::location::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Location.def()
-    }
 }
 
 impl Related<super::short_link::Entity> for Entity {
