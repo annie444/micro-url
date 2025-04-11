@@ -387,7 +387,7 @@ pub enum OidcCallbackResponseType {
     IntegerParseError(BasicError),
     OptionError(BasicError),
     DatabaseError(BasicError),
-    OidcCallback(BasicResponse),
+    OidcCallback(String),
     CookieNotFound(BasicError),
     TokenError(BasicError),
     InternalError(BasicError),
@@ -414,7 +414,7 @@ pub enum OidcCallbackResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),
     #[response(status = StatusCode::OK)]
-    OidcCallback(#[to_schema] BasicResponse, PrivateCookieJar),
+    OidcCallback(#[to_schema] String, PrivateCookieJar),
     #[response(status = StatusCode::UNAUTHORIZED)]
     CookieNotFound(#[to_schema] BasicError),
     #[response(status = StatusCode::BAD_REQUEST)]
@@ -427,7 +427,7 @@ impl IntoResponse for OidcCallbackResponse {
     fn into_response(self) -> Response {
         match self {
             OidcCallbackResponse::OidcCallback(response, jar) => {
-                (StatusCode::OK, jar, Json(response)).into_response()
+                (jar, Redirect::temporary(&response)).into_response()
             }
             OidcCallbackResponse::InvalidCsrfToken(e) => {
                 (StatusCode::BAD_REQUEST, Json(e)).into_response()
