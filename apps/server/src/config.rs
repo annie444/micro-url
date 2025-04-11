@@ -1,9 +1,29 @@
 use std::env;
+#[cfg(feature = "ips")]
+use std::str::FromStr;
 
+#[cfg(feature = "ips")]
+use axum_client_ip::ClientIpSource;
 use openidconnect::{Scope, core::CoreClaimName};
 use serde::{Deserialize, Serialize};
 use shuttle_runtime::SecretStore;
 
+#[cfg(feature = "ips")]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::derivable_impls)]
+pub struct ServerConfig {
+    pub db: ServerDatabaseConfig,
+    pub internal_url: String,
+    pub external_url: String,
+    pub addr: String,
+    pub port: u16,
+    pub scheme: String,
+    pub assets_path: String,
+    pub oidc: OidcConfig,
+    pub ip_source: ClientIpSource,
+}
+
+#[cfg(not(feature = "ips"))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(clippy::derivable_impls)]
 pub struct ServerConfig {
@@ -17,6 +37,7 @@ pub struct ServerConfig {
     pub oidc: OidcConfig,
 }
 
+#[cfg(not(feature = "ips"))]
 impl Default for ServerConfig {
     fn default() -> Self {
         Self {
@@ -28,6 +49,23 @@ impl Default for ServerConfig {
             port: 3000,
             scheme: "http".to_string(),
             assets_path: "../../js/frontend/dist".to_string(),
+        }
+    }
+}
+
+#[cfg(feature = "ips")]
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            db: ServerDatabaseConfig::default(),
+            oidc: OidcConfig::default(),
+            internal_url: "127.0.0.1:3000".to_string(),
+            external_url: "https://example.com".to_string(),
+            addr: "127.0.0.1".to_string(),
+            port: 3000,
+            scheme: "http".to_string(),
+            assets_path: "../../js/frontend/dist".to_string(),
+            ip_source: ClientIpSource::RightmostXForwardedFor,
         }
     }
 }
@@ -53,6 +91,64 @@ pub struct OidcConfig {
     pub cert_path: Option<String>,
 }
 
+#[cfg(feature = "ips")]
+impl ServerConfig {
+    #[tracing::instrument]
+    pub fn from_env() -> Self {
+        dotenvy::dotenv().ok();
+        let db = ServerDatabaseConfig::from_env();
+        let addr = get_env_var("ADDR").unwrap_or("127.0.0.1".to_string());
+        let port: u16 = get_env_var("PORT")
+            .unwrap_or("3000".to_string())
+            .parse()
+            .expect("PORT must be a number");
+        let scheme = get_env_var("SCHEME").unwrap_or("http".to_string());
+        let internal_url = get_env_var("INTERNAL_URL").unwrap_or(format!("{}:{}", addr, port));
+        let external_url = get_env_var("EXTERNAL_URL")
+            .unwrap_or_else(|| format!("{}://{}", &scheme, &internal_url));
+        let assets_path =
+            get_env_var("ASSETS_PATH").unwrap_or("../../js/frontend/dist".to_string());
+        let oidc = OidcConfig::from_env();
+        let ip_source: ClientIpSource = get_env_var("IP_SOURCE_HEADER")
+            .map(|v| ClientIpSource::from_str(&v).expect("Unable to parse the IP_SOURCE_HEADER"))
+            .unwrap_or(ClientIpSource::RightmostXForwardedFor);
+        Self {
+            db,
+            internal_url,
+            external_url,
+            addr,
+            port,
+            scheme,
+            assets_path,
+            oidc,
+            ip_source,
+        }
+    }
+
+    #[tracing::instrument(skip(secrets))]
+    pub fn from_secret(secrets: SecretStore) -> Self {
+        let oidc = OidcConfig::from_secret(secrets.clone());
+        let external_url = secrets
+            .get("EXTERNAL_URL")
+            .unwrap_or("http://localhost:8000".to_string());
+        let assets_path = secrets
+            .get("ASSETS_PATH")
+            .unwrap_or("../../js/frontend/dist".to_string());
+        let ip_source: ClientIpSource = secrets
+            .get("IP_SOURCE_HEADER")
+            .map(|v| ClientIpSource::from_str(&v).expect("Unable to parse the IP_SOURCE_HEADER"))
+            .unwrap_or(ClientIpSource::RightmostXForwardedFor);
+        Self {
+            oidc,
+            external_url,
+            assets_path,
+            ip_source,
+            ..Self::default()
+        }
+    }
+}
+
+#[cfg(not(feature = "ips"))]
 impl ServerConfig {
     #[tracing::instrument]
     pub fn from_env() -> Self {

@@ -10,9 +10,10 @@ use openidconnect::{
     OAuth2TokenResponse, PkceCodeChallenge, PkceCodeVerifier, TokenResponse, UserInfoClaims,
     core::{CoreAuthenticationFlow, CoreGenderClaim},
 };
-use sea_orm::entity::*;
+use sea_orm::{entity::*, query::*};
 use time::Duration as TimeDuration;
 use tracing::instrument;
+use uuid::Uuid;
 
 use super::structs::{
     AuthRequest, OidcCallbackResponse, OidcLoginResponse, OidcName, OidcNameResponse,
@@ -154,15 +155,26 @@ pub async fn oidc_callback(
         ));
     };
 
-    let new_user = user::ActiveModel {
-        user_id: ActiveValue::NotSet,
-        name: ActiveValue::set(name.as_str().to_owned()),
-        email: ActiveValue::set(email.as_str().to_owned()),
-        created_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
-        updated_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
-    };
+    let user = match user::Entity::find()
+        .filter(user::Column::Email.eq(email.as_str()))
+        .one(&state.conn)
+        .await?
+    {
+        Some(user) => user,
+        None => {
+            let user_id = Uuid::new_v4();
 
-    let user = new_user.insert(&state.conn).await?;
+            let new_user = user::ActiveModel {
+                user_id: ActiveValue::Set(user_id),
+                name: ActiveValue::set(name.as_str().to_owned()),
+                email: ActiveValue::set(email.as_str().to_owned()),
+                created_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
+                updated_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
+            };
+
+            new_user.insert(&state.conn).await?
+        }
+    };
 
     let new_session = sessions::ActiveModel {
         id: ActiveValue::NotSet,
@@ -174,7 +186,7 @@ pub async fn oidc_callback(
     new_session.insert(&state.conn).await?;
 
     Ok(OidcCallbackResponse::OidcCallback(
-        "User logged in".to_string().into(),
+        "/ui".to_string(),
         jar.add(cookie)
             .remove("verifier")
             .remove("nonce")
@@ -210,21 +222,21 @@ pub async fn oidc_login(
         .url();
 
     let verifier_cookie = Cookie::build(("verifier", pkce_verifier.secret().to_owned()))
-        .secure(true)
+        .secure(if cfg!(debug_assertions) { false } else { true })
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")
         .domain(format!(".{}", state.url.domain().unwrap()));
 
     let nonce_cookie = Cookie::build(("nonce", nonce.secret().to_owned()))
-        .secure(true)
+        .secure(if cfg!(debug_assertions) { false } else { true })
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")
         .domain(format!(".{}", state.url.domain().unwrap()));
 
     let csrf_token_cookie = Cookie::build(("csrf_token", csrf_token.secret().to_owned()))
-        .secure(true)
+        .secure(if cfg!(debug_assertions) { false } else { true })
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")

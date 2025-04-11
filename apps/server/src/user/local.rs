@@ -26,8 +26,9 @@ pub async fn add_local_user(
     State(state): State<ServerState>,
     Json(payload): Json<NewUserRequest>,
 ) -> Result<NewUserResponse, NewUserResponse> {
+    let user_id = Uuid::new_v4();
     let new_user = user::ActiveModel {
-        user_id: ActiveValue::NotSet,
+        user_id: ActiveValue::Set(user_id),
         name: ActiveValue::set(payload.name),
         email: ActiveValue::set(payload.email),
         created_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
