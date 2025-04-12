@@ -3960,6 +3960,7 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "argon2",
+ "async-channel 2.3.1",
  "axum",
  "axum-client-ip",
  "axum-extra",
@@ -4895,6 +4896,7 @@ dependencies = [
  "signal-hook-registry",
  "socket2",
  "tokio-macros",
+ "tracing",
  "windows-sys 0.52.0",
 ]
 
