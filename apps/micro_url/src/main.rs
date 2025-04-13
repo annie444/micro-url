@@ -1,7 +1,7 @@
 use std::{fs::read_to_string, path::PathBuf};
 
 use clap::Parser;
-use server::{config::ServerConfig, run};
+use server::{GetConfig, ServerConfig, run};
 
 #[derive(Parser)]
 #[command(name = "micro-url", version, about, long_about = None)]
