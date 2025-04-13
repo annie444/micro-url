@@ -1,26 +1,18 @@
-#[cfg(feature = "ips")]
-use std::net::IpAddr;
-
 #[cfg(feature = "headers")]
-use axum::http::header::HeaderMap;
+use axum::http::HeaderMap;
 use axum::{
     Json, debug_handler,
     extract::{Path, State},
 };
 #[cfg(feature = "ips")]
 use axum_client_ip::ClientIp;
-use entity::{short_link, views};
-#[cfg(feature = "ips")]
-use sea_orm::prelude::IpNetwork;
-use sea_orm::{DatabaseConnection, DbErr, RuntimeErr, entity::*, query::*};
-#[cfg(feature = "headers")]
-use serde_json::json;
-use tracing::{error, instrument, trace};
+use entity::short_link;
+use sea_orm::{DbErr, RuntimeErr, entity::*, query::*};
+use tracing::{error, instrument};
 
 use super::structs::{GetExistingUrlError, NewUrlRequest, NewUrlResponse, UpdateUrlResponse};
-#[cfg(feature = "headers")]
-use crate::structs::HeaderMapDef;
 use crate::{
+    actor::{ActorInputMessage, ViewInput},
     state::ServerState,
     urls::structs::{DeleteUrlResponse, GetUrlInfoResponse, GetUrlResponse},
 };
@@ -126,8 +118,7 @@ pub async fn get_existing_url(
 }
 
 // /{id}
-#[cfg(not(feature = "ips"))]
-#[cfg(not(feature = "headers"))]
+#[cfg(all(not(feature = "ips"), not(feature = "headers")))]
 #[instrument]
 #[debug_handler]
 #[utoipa::path(get, path = "/{id}", params(("id", description = "The short url ID")), responses(GetUrlResponse), tag = super::URL_TAG)]
@@ -138,10 +129,24 @@ pub async fn get_url(
     if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
         Ok(GetUrlResponse::Redirect(id))
     } else if let Some(url) = state.cache.get(&id) {
-        update_views(id.clone(), true, state.conn.clone());
+        state
+            .pool
+            .send(ActorInputMessage::UpdateViews(ViewInput {
+                id,
+                cached: true,
+                conn: state.conn.clone(),
+            }))
+            .await?;
         Ok(GetUrlResponse::Redirect(url.to_owned()))
     } else {
-        update_views(id.clone(), false, state.conn.clone());
+        state
+            .pool
+            .send(ActorInputMessage::UpdateViews(ViewInput {
+                id: id.clone(),
+                cached: false,
+                conn: state.conn.clone(),
+            }))
+            .await?;
         let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
             return Err(GetUrlResponse::UrlNotFound);
         };
@@ -150,58 +155,7 @@ pub async fn get_url(
     }
 }
 
-#[cfg(feature = "ips")]
-#[cfg(not(feature = "headers"))]
-#[instrument]
-#[debug_handler]
-#[utoipa::path(get, path = "/{id}", params(("id", description = "The short url ID")), responses(GetUrlResponse), tag = super::URL_TAG)]
-pub async fn get_url(
-    Path(id): Path<String>,
-    State(mut state): State<ServerState>,
-    ClientIp(ip): ClientIp,
-) -> Result<GetUrlResponse, GetUrlResponse> {
-    if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
-        Ok(GetUrlResponse::Redirect(id))
-    } else if let Some(url) = state.cache.get(&id) {
-        update_views(id.clone(), true, ip, state.conn.clone());
-        Ok(GetUrlResponse::Redirect(url.to_owned()))
-    } else {
-        update_views(id.clone(), false, ip, state.conn.clone());
-        let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
-            return Err(GetUrlResponse::UrlNotFound);
-        };
-        state.cache.put(id, short.original_url.clone());
-        Ok(GetUrlResponse::Redirect(short.original_url))
-    }
-}
-
-#[cfg(feature = "headers")]
-#[cfg(not(feature = "ips"))]
-#[instrument]
-#[debug_handler]
-#[utoipa::path(get, path = "/{id}", params(("id", description = "The short url ID")), responses(GetUrlResponse), tag = super::URL_TAG)]
-pub async fn get_url(
-    Path(id): Path<String>,
-    State(mut state): State<ServerState>,
-    headers: HeaderMap,
-) -> Result<GetUrlResponse, GetUrlResponse> {
-    if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
-        Ok(GetUrlResponse::Redirect(id))
-    } else if let Some(url) = state.cache.get(&id) {
-        update_views(id.clone(), true, headers, state.conn.clone());
-        Ok(GetUrlResponse::Redirect(url.to_owned()))
-    } else {
-        update_views(id.clone(), false, headers, state.conn.clone());
-        let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
-            return Err(GetUrlResponse::UrlNotFound);
-        };
-        state.cache.put(id, short.original_url.clone());
-        Ok(GetUrlResponse::Redirect(short.original_url))
-    }
-}
-
-#[cfg(feature = "headers")]
-#[cfg(feature = "ips")]
+#[cfg(all(feature = "ips", not(feature = "headers")))]
 #[instrument]
 #[debug_handler]
 #[utoipa::path(get, path = "/{id}", params(("id", description = "The short url ID")), responses(GetUrlResponse), tag = super::URL_TAG)]
@@ -209,15 +163,30 @@ pub async fn get_url(
     Path(id): Path<String>,
     State(mut state): State<ServerState>,
     ClientIp(ip): ClientIp,
-    headers: HeaderMap,
 ) -> Result<GetUrlResponse, GetUrlResponse> {
     if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
         Ok(GetUrlResponse::Redirect(id))
     } else if let Some(url) = state.cache.get(&id) {
-        update_views(id.clone(), true, ip, headers, state.conn.clone());
+        state
+            .pool
+            .send(ActorInputMessage::UpdateViews(ViewInput {
+                id,
+                cached: true,
+                ip,
+                conn: state.conn.clone(),
+            }))
+            .await?;
         Ok(GetUrlResponse::Redirect(url.to_owned()))
     } else {
-        update_views(id.clone(), false, ip, headers, state.conn.clone());
+        state
+            .pool
+            .send(ActorInputMessage::UpdateViews(ViewInput {
+                id: id.clone(),
+                cached: false,
+                ip,
+                conn: state.conn.clone(),
+            }))
+            .await?;
         let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
             return Err(GetUrlResponse::UrlNotFound);
         };
@@ -226,100 +195,87 @@ pub async fn get_url(
     }
 }
 
-#[cfg(not(feature = "ips"))]
-#[cfg(not(feature = "headers"))]
+#[cfg(all(feature = "headers", not(feature = "ips")))]
 #[instrument]
-fn update_views(id: String, cached: bool, conn: DatabaseConnection) {
-    tokio::spawn(async move {
-        let view = views::ActiveModel {
-            short_link: ActiveValue::Set(id.clone()),
-            cache_hit: ActiveValue::Set(cached),
-            created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
-            ..Default::default()
-        };
-        match view.insert(&conn).await {
-            Ok(model) => trace!("Views updated successfully for url {}: {:?}", id, model),
-            Err(e) => error!("Error updating views for url {}: {}", id, e.to_string()),
-        };
-    });
-}
-
-#[cfg(feature = "ips")]
-#[cfg(not(feature = "headers"))]
-#[instrument]
-fn update_views(id: String, cached: bool, ip: IpAddr, conn: DatabaseConnection) {
-    tokio::spawn(async move {
-        let view = views::ActiveModel {
-            short_link: ActiveValue::Set(id.clone()),
-            ip: ActiveValue::Set(IpNetwork::new(ip, 0).ok()),
-            cache_hit: ActiveValue::Set(cached),
-            created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
-            ..Default::default()
-        };
-        match view.insert(&conn).await {
-            Ok(model) => trace!("Views updated successfully for url {}: {:?}", id, model),
-            Err(e) => error!("Error updating views for url {}: {}", id, e.to_string()),
-        };
-    });
-}
-
-#[cfg(feature = "headers")]
-#[cfg(not(feature = "ips"))]
-#[instrument]
-fn update_views(id: String, cached: bool, headers: HeaderMap, conn: DatabaseConnection) {
-    tokio::spawn(async move {
-        let headers: HeaderMapDef = match headers.try_into() {
-            Ok(hm) => hm,
-            Err(e) => {
-                error!("Unable to serialize the headers: {}", e.to_string());
-                return;
-            }
-        };
-        let view = views::ActiveModel {
-            short_link: ActiveValue::Set(id.clone()),
-            headers: ActiveValue::Set(Some(json!(headers))),
-            cache_hit: ActiveValue::Set(cached),
-            created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
-            ..Default::default()
-        };
-        match view.insert(&conn).await {
-            Ok(model) => trace!("Views updated successfully for url {}: {:?}", id, model),
-            Err(e) => error!("Error updating views for url {}: {}", id, e.to_string()),
-        };
-    });
-}
-
-#[cfg(feature = "headers")]
-#[cfg(feature = "ips")]
-#[instrument]
-fn update_views(
-    id: String,
-    cached: bool,
-    ip: IpAddr,
+#[debug_handler]
+#[utoipa::path(get, path = "/{id}", params(("id", description = "The short url ID")), responses(GetUrlResponse), tag = super::URL_TAG)]
+pub async fn get_url(
+    Path(id): Path<String>,
+    State(mut state): State<ServerState>,
     headers: HeaderMap,
-    conn: DatabaseConnection,
-) {
-    tokio::spawn(async move {
-        let headers: HeaderMapDef = match headers.try_into() {
-            Ok(hm) => hm,
-            Err(e) => {
-                error!("Unable to serialize the headers: {}", e.to_string());
-                return;
-            }
+) -> Result<GetUrlResponse, GetUrlResponse> {
+    if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
+        Ok(GetUrlResponse::Redirect(id))
+    } else if let Some(url) = state.cache.get(&id) {
+        state
+            .pool
+            .send(ActorInputMessage::UpdateViews(ViewInput {
+                id,
+                cached: true,
+                headers,
+                conn: state.conn.clone(),
+            }))
+            .await?;
+        Ok(GetUrlResponse::Redirect(url.to_owned()))
+    } else {
+        state
+            .pool
+            .send(ActorInputMessage::UpdateViews(ViewInput {
+                id: id.clone(),
+                cached: false,
+                headers,
+                conn: state.conn.clone(),
+            }))
+            .await?;
+        let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
+            return Err(GetUrlResponse::UrlNotFound);
         };
-        let view = views::ActiveModel {
-            short_link: ActiveValue::Set(id.clone()),
-            ip: ActiveValue::Set(IpNetwork::new(ip, 0).ok()),
-            headers: ActiveValue::Set(Some(json!(headers))),
-            cache_hit: ActiveValue::Set(cached),
-            created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
-            ..Default::default()
+        state.cache.put(id, short.original_url.clone());
+        Ok(GetUrlResponse::Redirect(short.original_url))
+    }
+}
+
+#[cfg(all(feature = "headers", feature = "ips"))]
+#[instrument]
+#[debug_handler]
+#[utoipa::path(get, path = "/{id}", params(("id", description = "The short url ID")), responses(GetUrlResponse), tag = super::URL_TAG)]
+pub async fn get_url(
+    Path(id): Path<String>,
+    State(mut state): State<ServerState>,
+    ClientIp(ip): ClientIp,
+    headers: HeaderMap,
+) -> Result<GetUrlResponse, GetUrlResponse> {
+    if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
+        Ok(GetUrlResponse::Redirect(id))
+    } else if let Some(url) = state.cache.get(&id) {
+        state
+            .pool
+            .send(ActorInputMessage::UpdateViews(ViewInput {
+                id,
+                cached: true,
+                ip,
+                headers,
+                conn: state.conn.clone(),
+            }))
+            .await?;
+        Ok(GetUrlResponse::Redirect(url.to_owned()))
+    } else {
+        state
+            .pool
+            .send(ActorInputMessage::UpdateViews(ViewInput {
+                id: id.clone(),
+                cached: false,
+                ip,
+                headers,
+                conn: state.conn.clone(),
+            }))
+            .await?;
+        let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
+            return Err(GetUrlResponse::UrlNotFound);
         };
-        match view.insert(&conn).await {
-            Ok(model) => trace!("Views updated successfully for url {}: {:?}", id, model),
-            Err(e) => error!("Error updating views for url {}: {}", id, e.to_string()),
-        };
-    });
+        state.cache.put(id, short.original_url.clone());
+        Ok(GetUrlResponse::Redirect(short.original_url))
+    }
 }
 
 // /api/url/delete/{id}

@@ -26,7 +26,7 @@ use axum::{
 };
 #[cfg(feature = "ips")]
 use axum_client_ip::ClientIpSource;
-pub use config::ServerConfig;
+pub use config::{GetConfig, ServerConfig};
 use logger::{init_subscriber, telemetry};
 use state::ServerState;
 use tower::{
@@ -81,10 +81,6 @@ pub async fn run(config: ServerConfig) {
 #[tracing::instrument]
 pub async fn init_router(config: config::ServerConfig, state: Option<ServerState>) -> Router {
     let trace_layer = telemetry();
-    let state = match state {
-        Some(state) => state,
-        None => ServerState::new(&config).await,
-    };
 
     let x_request_id = HeaderName::from_static("x-request-id");
 
@@ -101,6 +97,13 @@ pub async fn init_router(config: config::ServerConfig, state: Option<ServerState
         panic!("Assets path is not a directory: {:?}", asset_path);
     }
 
+    let layers = build_layers(x_request_id, trace_layer, &config);
+
+    let state = match state {
+        Some(state) => state,
+        None => ServerState::new(config).await,
+    };
+
     let api_routes = api::router(state.clone());
 
     let app_routes = Router::new()
@@ -116,7 +119,7 @@ pub async fn init_router(config: config::ServerConfig, state: Option<ServerState
     Router::new()
         .merge(app_routes)
         .merge(api_routes)
-        .layer(build_layers(x_request_id, trace_layer, &config))
+        .layer(layers)
 }
 
 #[cfg(feature = "ips")]

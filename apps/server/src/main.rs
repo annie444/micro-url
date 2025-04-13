@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use axum::Router;
-use server::{ServerConfig, init_router, state::ServerState};
+use server::{GetConfig, ServerConfig, init_router, state::ServerState};
 use shuttle_runtime::{SecretStore, Service};
 use sqlx::PgPool;
 
@@ -34,7 +34,7 @@ async fn main(
     #[shuttle_runtime::Secrets] secrets: SecretStore,
 ) -> Result<MicroUrlService, shuttle_runtime::Error> {
     let config = ServerConfig::from_secret(secrets);
-    let state = ServerState::new_with_pool(&config, db).await;
+    let state = ServerState::new_with_pool(config.clone(), db).await;
     let router = init_router(config, Some(state)).await;
     Ok(router.into())
 }

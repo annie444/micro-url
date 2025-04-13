@@ -1,20 +1,16 @@
-#[cfg(feature = "ips")]
-use std::net::IpAddr;
-
-#[cfg(feature = "headers")]
-use axum::http::HeaderMap;
 use chrono::Utc;
 use entity::{sessions, short_link, views};
 #[cfg(feature = "ips")]
 use sea_orm::prelude::IpNetwork;
-use sea_orm::{DatabaseConnection, entity::*, query::*};
+use sea_orm::{entity::*, query::*};
 use serde_json::json;
-use tracing::{error, trace};
+use tracing::{error, instrument, trace};
 
-use super::msgs::{ActorError, ActorOutputMessage, DbInput, ViewInput};
+use super::{ActorError, ActorOutputMessage, DbInput, ViewInput};
 #[cfg(feature = "headers")]
 use crate::structs::HeaderMapDef;
 
+#[instrument]
 pub(super) async fn clean_urls(db: DbInput) -> Result<ActorOutputMessage, ActorError> {
     let DbInput { conn } = db;
 
@@ -47,6 +43,7 @@ pub(super) async fn clean_urls(db: DbInput) -> Result<ActorOutputMessage, ActorE
     })
 }
 
+#[instrument]
 pub(super) async fn clean_sessions(db: DbInput) -> Result<ActorOutputMessage, ActorError> {
     let DbInput { conn } = db;
 
@@ -79,45 +76,62 @@ pub(super) async fn clean_sessions(db: DbInput) -> Result<ActorOutputMessage, Ac
     })
 }
 
-#[cfg(not(feature = "ips"))]
-#[cfg(not(feature = "headers"))]
+#[cfg(all(not(feature = "ips"), not(feature = "headers")))]
 #[instrument]
-pub(super) fn update_views(id: String, cached: bool, conn: DatabaseConnection) {
-    tokio::spawn(async move {
-        let view = views::ActiveModel {
-            short_link: ActiveValue::Set(id.clone()),
-            cache_hit: ActiveValue::Set(cached),
-            created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
-            ..Default::default()
-        };
-        match view.insert(&conn).await {
-            Ok(model) => trace!("Views updated successfully for url {}: {:?}", id, model),
-            Err(e) => error!("Error updating views for url {}: {}", id, e.to_string()),
-        };
-    });
+pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, ActorError> {
+    let ViewInput { id, cached, conn } = msg;
+    let view = views::ActiveModel {
+        short_link: ActiveValue::Set(id.clone()),
+        cache_hit: ActiveValue::Set(cached),
+        created_at: ActiveValue::Set(Utc::now().naive_utc()),
+        ..Default::default()
+    };
+    match view.insert(&conn).await {
+        Ok(model) => {
+            trace!("Views updated successfully for url {}: {:?}", id, model);
+            Ok(ActorOutputMessage {
+                msg: format!("Views updated successfully for url {}: {:?}", id, model),
+            })
+        }
+        Err(e) => {
+            error!("Error updating views for url {}: {}", id, e.to_string());
+            Err(e.into())
+        }
+    }
 }
 
-#[cfg(feature = "ips")]
-#[cfg(not(feature = "headers"))]
+#[cfg(all(feature = "ips", not(feature = "headers")))]
 #[instrument]
-pub(super) fn update_views(id: String, cached: bool, ip: IpAddr, conn: DatabaseConnection) {
-    tokio::spawn(async move {
-        let view = views::ActiveModel {
-            short_link: ActiveValue::Set(id.clone()),
-            ip: ActiveValue::Set(IpNetwork::new(ip, 0).ok()),
-            cache_hit: ActiveValue::Set(cached),
-            created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
-            ..Default::default()
-        };
-        match view.insert(&conn).await {
-            Ok(model) => trace!("Views updated successfully for url {}: {:?}", id, model),
-            Err(e) => error!("Error updating views for url {}: {}", id, e.to_string()),
-        };
-    });
+pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, ActorError> {
+    let ViewInput {
+        id,
+        cached,
+        ip,
+        conn,
+    } = msg;
+    let view = views::ActiveModel {
+        short_link: ActiveValue::Set(id.clone()),
+        ip: ActiveValue::Set(IpNetwork::new(ip, 0).ok()),
+        cache_hit: ActiveValue::Set(cached),
+        created_at: ActiveValue::Set(Utc::now().naive_utc()),
+        ..Default::default()
+    };
+    match view.insert(&conn).await {
+        Ok(model) => {
+            trace!("Views updated successfully for url {}: {:?}", id, model);
+            Ok(ActorOutputMessage {
+                msg: format!("Views updated successfully for url {}: {:?}", id, model),
+            })
+        }
+        Err(e) => {
+            error!("Error updating views for url {}: {}", id, e.to_string());
+            Err(e.into())
+        }
+    }
 }
 
-#[cfg(all(feature = "headers", feature = "ips"))] //not
-#[tracing::instrument]
+#[cfg(all(feature = "headers", not(feature = "ips")))]
+#[instrument]
 pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, ActorError> {
     let ViewInput {
         id,
@@ -136,7 +150,7 @@ pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, A
         short_link: ActiveValue::Set(id.clone()),
         headers: ActiveValue::Set(Some(json!(headers))),
         cache_hit: ActiveValue::Set(cached),
-        created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
+        created_at: ActiveValue::Set(Utc::now().naive_utc()),
         ..Default::default()
     };
     match view.insert(&conn).await {
@@ -153,41 +167,41 @@ pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, A
     }
 }
 
-// #[cfg(all(feature = "headers", feature = "ips"))]
-// #[tracing::instrument]
-// pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, ActorError> {
-//     let ViewInput {
-//         ip,
-//         id,
-//         cached,
-//         headers,
-//         conn,
-//     } = msg;
-//     let headers: HeaderMapDef = match headers.try_into() {
-//         Ok(hm) => hm,
-//         Err(e) => {
-//             error!("Unable to serialize the headers: {}", e.to_string());
-//             return Err(e.into());
-//         }
-//     };
-//     let view = views::ActiveModel {
-//         short_link: ActiveValue::Set(id.clone()),
-//         ip: ActiveValue::Set(IpNetwork::new(ip, 0).ok()),
-//         headers: ActiveValue::Set(Some(json!(headers))),
-//         cache_hit: ActiveValue::Set(cached),
-//         created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
-//         ..Default::default()
-//     };
-//     match view.insert(&conn).await {
-//         Ok(model) => {
-//             trace!("Views updated successfully for url {}: {:?}", id, model);
-//             Ok(ActorOutputMessage {
-//                 msg: format!("Views updated successfully for url {}: {:?}", id, model),
-//             })
-//         }
-//         Err(e) => {
-//             error!("Error updating views for url {}: {}", id, e.to_string());
-//             Err(e.into())
-//         }
-//     }
-// }
+#[cfg(all(feature = "headers", feature = "ips"))]
+#[instrument]
+pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, ActorError> {
+    let ViewInput {
+        ip,
+        id,
+        cached,
+        headers,
+        conn,
+    } = msg;
+    let headers: HeaderMapDef = match headers.try_into() {
+        Ok(hm) => hm,
+        Err(e) => {
+            error!("Unable to serialize the headers: {}", e.to_string());
+            return Err(e.into());
+        }
+    };
+    let view = views::ActiveModel {
+        short_link: ActiveValue::Set(id.clone()),
+        ip: ActiveValue::Set(IpNetwork::new(ip, 0).ok()),
+        headers: ActiveValue::Set(Some(json!(headers))),
+        cache_hit: ActiveValue::Set(cached),
+        created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
+        ..Default::default()
+    };
+    match view.insert(&conn).await {
+        Ok(model) => {
+            trace!("Views updated successfully for url {}: {:?}", id, model);
+            Ok(ActorOutputMessage {
+                msg: format!("Views updated successfully for url {}: {:?}", id, model),
+            })
+        }
+        Err(e) => {
+            error!("Error updating views for url {}: {}", id, e.to_string());
+            Err(e.into())
+        }
+    }
+}

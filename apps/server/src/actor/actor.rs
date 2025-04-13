@@ -3,17 +3,14 @@ use std::future::Future;
 use async_channel::Receiver;
 use tracing::{error, instrument, trace};
 
-use super::{
-    msgs::{ActorInputMessage, ActorOutputMessage},
-    tasks::*,
-};
+use super::{ActorInputMessage, ActorOutputMessage, tasks::*};
 
 #[derive(Debug, Clone)]
 pub(super) struct DefaultActor {
     in_receiver: Receiver<ActorInputMessage>,
 }
 
-pub trait PoolableActor: Clone + Send + Sync + 'static {
+pub trait PoolableActor: Clone + Send + Sync + std::fmt::Debug + 'static {
     fn set_channel(&mut self, in_receiver: Receiver<ActorInputMessage>) -> &mut Self;
     fn handle_message(&mut self, msg: ActorInputMessage) -> impl Future<Output = ()> + Send;
     fn run(&mut self) -> impl Future<Output = ()> + Send;
@@ -39,6 +36,7 @@ impl PoolableActor for DefaultActor {
             match msg {
                 ActorInputMessage::CleanUrls(db) => clean_urls(db).await,
                 ActorInputMessage::CleanSessions(db) => clean_sessions(db).await,
+                ActorInputMessage::UpdateViews(view) => update_views(view).await,
                 ActorInputMessage::None => {
                     {
                         async move {

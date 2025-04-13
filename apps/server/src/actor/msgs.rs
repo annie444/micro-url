@@ -15,6 +15,7 @@ pub enum ActorInputMessage {
     None,
     CleanSessions(DbInput),
     CleanUrls(DbInput),
+    UpdateViews(ViewInput),
 }
 
 #[derive(Debug, Clone, Default)]
@@ -22,22 +23,39 @@ pub struct DbInput {
     pub conn: DatabaseConnection,
 }
 
-// #[cfg(all(feature = "headers", feature = "ips"))]
-// #[derive(Debug, Clone)]
-// pub struct ViewInput {
-//     pub id: String,
-//     pub cached: bool,
-//     pub ip: IpAddr,
-//     pub headers: HeaderMap,
-//     pub conn: DatabaseConnection,
-// }
-
 #[cfg(all(feature = "headers", feature = "ips"))]
 #[derive(Debug, Clone)]
 pub struct ViewInput {
     pub id: String,
     pub cached: bool,
+    pub ip: IpAddr,
     pub headers: HeaderMap,
+    pub conn: DatabaseConnection,
+}
+
+#[cfg(all(feature = "headers", not(feature = "ips")))]
+#[derive(Debug, Clone)]
+pub struct ViewInput {
+    pub id: String,
+    pub cached: bool,
+    pub headers: HeaderMap,
+    pub conn: DatabaseConnection,
+}
+
+#[cfg(all(not(feature = "headers"), feature = "ips"))]
+#[derive(Debug, Clone)]
+pub struct ViewInput {
+    pub id: String,
+    pub cached: bool,
+    pub ip: IpAddr,
+    pub conn: DatabaseConnection,
+}
+
+#[cfg(all(not(feature = "headers"), not(feature = "ips")))]
+#[derive(Debug, Clone)]
+pub struct ViewInput {
+    pub id: String,
+    pub cached: bool,
     pub conn: DatabaseConnection,
 }
 
