@@ -42,7 +42,7 @@ impl Default for ActorPoolConfig {
         Self {
             workers: 4,
             blocking_workers: 2,
-            stack_size: 32 * 1024,
+            stack_size: 2 * usize::pow(1024, 2),
             keep_alive: Duration::from_secs(10),
             event_interval: 61,
         }
@@ -73,7 +73,7 @@ impl GetConfig for ActorPoolConfig {
                 s.parse()
                     .expect("Unable to coerce ACTOR_STACK_SIZE into an integer")
             })
-            .unwrap_or(32 * 1024);
+            .unwrap_or(2 * usize::pow(1024, 2));
         let keep_alive: Duration = env::var("ACTOR_KEEP_ALIVE")
             .ok()
             .map(|s| {
@@ -121,7 +121,7 @@ impl GetConfig for ActorPoolConfig {
                 s.parse()
                     .expect("Unable to coerce ACTOR_STACK_SIZE into an integer")
             })
-            .unwrap_or(32 * 1024);
+            .unwrap_or(2 * usize::pow(1024, 2));
         let keep_alive: Duration = secrets
             .get("ACTOR_KEEP_ALIVE")
             .map(|s| {
