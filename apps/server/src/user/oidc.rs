@@ -222,21 +222,21 @@ pub async fn oidc_login(
         .url();
 
     let verifier_cookie = Cookie::build(("verifier", pkce_verifier.secret().to_owned()))
-        .secure(if cfg!(debug_assertions) { false } else { true })
+        .secure(!cfg!(debug_assertions))
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")
         .domain(format!(".{}", state.url.domain().unwrap()));
 
     let nonce_cookie = Cookie::build(("nonce", nonce.secret().to_owned()))
-        .secure(if cfg!(debug_assertions) { false } else { true })
+        .secure(!cfg!(debug_assertions))
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")
         .domain(format!(".{}", state.url.domain().unwrap()));
 
     let csrf_token_cookie = Cookie::build(("csrf_token", csrf_token.secret().to_owned()))
-        .secure(if cfg!(debug_assertions) { false } else { true })
+        .secure(!cfg!(debug_assertions))
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")

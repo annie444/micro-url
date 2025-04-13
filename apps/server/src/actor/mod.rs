@@ -1,3 +1,4 @@
+#[allow(clippy::module_inception)]
 pub(super) mod actor;
 mod msgs;
 mod pool;
