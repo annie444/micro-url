@@ -21,6 +21,7 @@ use sea_orm::query::JsonValue;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "headers")]
 use serde_json::value::Value;
+use tracing::instrument;
 use ts_rs::TS;
 use utoipa::ToSchema;
 
@@ -91,9 +92,10 @@ static DURATION_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     .expect("Unable to compile Regex pattern")
 });
 
+#[instrument]
 pub(crate) fn parse_duration(s: &str) -> Result<Duration, ServerError> {
     let mut time = Duration::new(0, 0);
-    if let Some(cap) = (&*DURATION_PATTERN).captures(s) {
+    if let Some(cap) = &DURATION_PATTERN.captures(s) {
         if let Some(years) = cap.name("year") {
             let year: u64 = years.as_str().parse()?;
             let yts = year * 365 * 24 * 60 * 60;
@@ -154,9 +156,10 @@ pub(crate) fn parse_duration(s: &str) -> Result<Duration, ServerError> {
     Ok(time)
 }
 
+#[instrument]
 pub(crate) fn parse_time_delta(s: &str) -> Result<TimeDelta, ServerError> {
     let mut time = TimeDelta::zero();
-    if let Some(cap) = (&*DURATION_PATTERN).captures(s) {
+    if let Some(cap) = &DURATION_PATTERN.captures(s) {
         if let Some(years) = cap.name("year") {
             let year: i64 = years.as_str().parse()?;
             let ytd = year * 365;
