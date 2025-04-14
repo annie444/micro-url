@@ -222,8 +222,8 @@ async fn schedule_clean_links(
 impl ActorPool {
     #[instrument]
     pub fn new(config: &ActorPoolConfig, conn: DatabaseConnection) -> Self {
-        let num_chanels = (config.workers + config.blocking_workers + 2) * 2;
-        let (in_sender, in_receiver) = bounded(num_chanels);
+        let num_channels = (config.workers + config.blocking_workers + 2) * 2;
+        let (in_sender, in_receiver) = bounded(num_channels);
         let rt = Builder::new_multi_thread()
             .enable_all()
             .worker_threads(config.workers + 2)

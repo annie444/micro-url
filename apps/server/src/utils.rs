@@ -147,7 +147,7 @@ pub(crate) fn parse_duration(s: &str) -> Result<Duration, ServerError> {
             let us_duration = Duration::from_micros(us);
             time += us_duration;
         }
-        if let Some(nanos) = cap.name("nanoseconds") {
+        if let Some(nanos) = cap.name("nanosecond") {
             let ns: u64 = nanos.as_str().parse()?;
             let ns_duration = Duration::from_nanos(ns);
             time += ns_duration;
@@ -203,12 +203,12 @@ pub(crate) fn parse_time_delta(s: &str) -> Result<TimeDelta, ServerError> {
             let ms_duration = TimeDelta::milliseconds(ms);
             time += ms_duration;
         }
-        if let Some(micros) = cap.name("microseconds") {
+        if let Some(micros) = cap.name("microsecond") {
             let us: i64 = micros.as_str().parse()?;
             let us_duration = TimeDelta::microseconds(us);
             time += us_duration;
         }
-        if let Some(nanos) = cap.name("nanoseconds") {
+        if let Some(nanos) = cap.name("nanosecond") {
             let ns: i64 = nanos.as_str().parse()?;
             let ns_duration = TimeDelta::nanoseconds(ns);
             time += ns_duration;
