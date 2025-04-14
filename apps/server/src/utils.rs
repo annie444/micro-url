@@ -142,7 +142,7 @@ pub(crate) fn parse_duration(s: &str) -> Result<Duration, ServerError> {
             let ms_duration = Duration::from_millis(ms);
             time += ms_duration;
         }
-        if let Some(micros) = cap.name("microseconds") {
+        if let Some(micros) = cap.name("microsecond") {
             let us: u64 = micros.as_str().parse()?;
             let us_duration = Duration::from_micros(us);
             time += us_duration;
