@@ -10,7 +10,7 @@ use ts_rs::TS;
 use utoipa::{IntoResponses, ToSchema};
 use uuid::Uuid;
 
-use crate::structs::BasicError;
+use crate::utils::BasicError;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
 #[ts(export, export_to = "../../../js/frontend/src/lib/types/")]

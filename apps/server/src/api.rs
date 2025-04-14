@@ -8,7 +8,7 @@ use utoipa::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::{state::ServerState, structs, urls, user};
+use crate::{state::ServerState, urls, user, utils};
 
 #[derive(Debug, Serialize)]
 pub struct SecurityDef;
@@ -40,8 +40,8 @@ impl Modify for SecurityDef {
             user::structs::UserLinks,
             user::structs::OidcName,
             urls::structs::NewUrlRequest,
-            structs::BasicError,
-            structs::BasicResponse
+            utils::BasicError,
+            utils::BasicResponse
         ),
     ),
     tags(

@@ -55,6 +55,8 @@ pub enum ServerError {
     PasswordHashError(#[from] argon2::password_hash::Error),
     #[error("Error decoding header value: {0}")]
     HeaderError(#[from] axum::http::header::ToStrError),
+    #[error("Error coercing string into integer: {0}")]
+    ParseIntError(#[from] std::num::ParseIntError),
 }
 
 impl IntoResponse for ServerError {
@@ -144,6 +146,10 @@ impl IntoResponse for ServerError {
             }
             Self::HeaderError(e) => {
                 error!("Ascii decoding error: {}", e.to_string());
+                (StatusCode::BAD_REQUEST, e.to_string())
+            }
+            Self::ParseIntError(e) => {
+                error!("Unable to coerce string into integer: {}", e.to_string());
                 (StatusCode::BAD_REQUEST, e.to_string())
             }
         };

@@ -8,7 +8,7 @@ use tracing::{error, instrument, trace};
 
 use super::{ActorError, ActorOutputMessage, DbInput, ViewInput};
 #[cfg(feature = "headers")]
-use crate::structs::HeaderMapDef;
+use crate::utils::HeaderMapDef;
 
 #[instrument]
 pub(super) async fn clean_urls(db: DbInput) -> Result<ActorOutputMessage, ActorError> {

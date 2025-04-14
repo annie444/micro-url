@@ -4,9 +4,9 @@ pub mod config;
 pub mod error;
 pub mod logger;
 pub mod state;
-pub mod structs;
 pub mod urls;
 pub mod user;
+pub mod utils;
 
 use std::{
     env::current_dir,

@@ -9,18 +9,24 @@ use std::{
 };
 
 use async_channel::{SendError, Sender, bounded};
+use chrono::TimeDelta;
+use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use tokio::{
     runtime::{Builder, Handle, Runtime},
     sync::RwLock,
+    time::sleep,
 };
 use tracing::instrument;
 
 use super::{
-    ActorInputMessage,
+    ActorInputMessage, DbInput,
     actor::{DefaultActor, PoolableActor},
 };
-use crate::config::GetConfig;
+use crate::{
+    config::GetConfig,
+    utils::{parse_duration, parse_time_delta},
+};
 
 #[derive(Clone, Debug)]
 pub struct ActorPool {
@@ -30,6 +36,8 @@ pub struct ActorPool {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ActorPoolConfig {
+    pub clean_sessions: Duration,
+    pub clean_links: Duration,
     pub workers: usize,
     pub blocking_workers: usize,
     pub stack_size: usize,
@@ -45,6 +53,8 @@ impl Default for ActorPoolConfig {
             stack_size: 2 * usize::pow(1024, 2),
             keep_alive: Duration::from_secs(10),
             event_interval: 61,
+            clean_sessions: Duration::from_secs(15),
+            clean_links: Duration::from_secs(1800),
         }
     }
 }
@@ -77,10 +87,8 @@ impl GetConfig for ActorPoolConfig {
         let keep_alive: Duration = env::var("ACTOR_KEEP_ALIVE")
             .ok()
             .map(|s| {
-                Duration::from_secs(
-                    s.parse()
-                        .expect("Unable to coerce ACTOR_KEEP_ALIVE into a duration"),
-                )
+                parse_duration(&s)
+                    .expect("Unable to coerce ACTOR_KEEP_ALIVE into a duration string")
             })
             .unwrap_or(Duration::from_secs(10));
         let event_interval: u32 = env::var("ACTOR_EVENT_INTERVAL")
@@ -90,12 +98,32 @@ impl GetConfig for ActorPoolConfig {
                     .expect("Unable to coerce ACTOR_EVENT_INTERVAL into an integer")
             })
             .unwrap_or(61);
+        let clean_sessions = env::var("SESSION_CLEAN_INTERVAL")
+            .ok()
+            .map(|s| {
+                parse_time_delta(&s)
+                    .expect("Unable to coerce SESSION_CLEAN_INTERVAL to a duration string")
+            })
+            .unwrap_or(TimeDelta::seconds(10))
+            .to_std()
+            .expect("SESSION_CLEAN_INTERVAL is too large");
+        let clean_links = env::var("SHORT_LINKS_CLEAN_INTERVAL")
+            .ok()
+            .map(|s| {
+                parse_time_delta(&s)
+                    .expect("Unable to coerce SHORT_LINKS_CLEAN_INTERVAL into a duration string")
+            })
+            .unwrap_or(TimeDelta::minutes(30))
+            .to_std()
+            .expect("SHORT_LINKS_CLEAN_INTERVAL is too large");
         Self {
             workers,
             blocking_workers,
             stack_size,
             keep_alive,
             event_interval,
+            clean_sessions,
+            clean_links,
         }
     }
 
@@ -124,12 +152,7 @@ impl GetConfig for ActorPoolConfig {
             .unwrap_or(2 * usize::pow(1024, 2));
         let keep_alive: Duration = secrets
             .get("ACTOR_KEEP_ALIVE")
-            .map(|s| {
-                Duration::from_secs(
-                    s.parse()
-                        .expect("Unable to coerce ACTOR_KEEP_ALIVE into a duration"),
-                )
-            })
+            .map(|s| parse_duration(&s).expect("Unable to coerce ACTOR_KEEP_ALIVE into a duration"))
             .unwrap_or(Duration::from_secs(10));
         let event_interval: u32 = secrets
             .get("ACTOR_EVENT_INTERVAL")
@@ -138,24 +161,72 @@ impl GetConfig for ActorPoolConfig {
                     .expect("Unable to coerce ACTOR_EVENT_INTERVAL into an integer")
             })
             .unwrap_or(61);
+        let clean_sessions = secrets
+            .get("SESSION_CLEAN_INTERVAL")
+            .map(|s| {
+                parse_time_delta(&s)
+                    .expect("Unable to coerce SESSION_CLEAN_INTERVAL to a duration string")
+            })
+            .unwrap_or(TimeDelta::seconds(10))
+            .to_std()
+            .expect("SESSION_CLEAN_INTERVAL is too large");
+        let clean_links = secrets
+            .get("SHORT_LINKS_CLEAN_INTERVAL")
+            .map(|s| {
+                parse_time_delta(&s)
+                    .expect("Unable to coerce SHORT_LINKS_CLEAN_INTERVAL into a duration string")
+            })
+            .unwrap_or(TimeDelta::minutes(30))
+            .to_std()
+            .expect("SHORT_LINKS_CLEAN_INTERVAL is too large");
         Self {
             workers,
             blocking_workers,
             stack_size,
             keep_alive,
             event_interval,
+            clean_sessions,
+            clean_links,
         }
+    }
+}
+
+async fn schedule_clean_sessions(
+    in_sender: Sender<ActorInputMessage>,
+    duration: Duration,
+    conn: DatabaseConnection,
+) -> Result<(), SendError<ActorInputMessage>> {
+    loop {
+        in_sender
+            .send(ActorInputMessage::CleanSessions(DbInput {
+                conn: conn.clone(),
+            }))
+            .await?;
+        sleep(duration).await;
+    }
+}
+
+async fn schedule_clean_links(
+    in_sender: Sender<ActorInputMessage>,
+    duration: Duration,
+    conn: DatabaseConnection,
+) -> Result<(), SendError<ActorInputMessage>> {
+    loop {
+        in_sender
+            .send(ActorInputMessage::CleanUrls(DbInput { conn: conn.clone() }))
+            .await?;
+        sleep(duration).await;
     }
 }
 
 impl ActorPool {
     #[instrument]
-    pub fn new(config: &ActorPoolConfig) -> Self {
-        let num_chanels = (config.workers + config.blocking_workers) * 2;
+    pub fn new(config: &ActorPoolConfig, conn: DatabaseConnection) -> Self {
+        let num_chanels = (config.workers + config.blocking_workers + 2) * 2;
         let (in_sender, in_receiver) = bounded(num_chanels);
         let rt = Builder::new_multi_thread()
             .enable_all()
-            .worker_threads(config.workers)
+            .worker_threads(config.workers + 2)
             .max_blocking_threads(config.blocking_workers)
             .thread_name_fn(|| {
                 static ATOMIC_ID: AtomicUsize = AtomicUsize::new(0);
@@ -171,6 +242,13 @@ impl ActorPool {
             let in_receiver = in_receiver.clone();
             rt.spawn(async move { DefaultActor::new(in_receiver).run().await });
         }
+        let duration = config.clean_sessions;
+        let in_cleaner = in_sender.clone();
+        let db_conn = conn.clone();
+        rt.spawn(async move { schedule_clean_sessions(in_cleaner, duration, db_conn).await });
+        let duration = config.clean_links;
+        let in_cleaner = in_sender.clone();
+        rt.spawn(async move { schedule_clean_links(in_cleaner, duration, conn).await });
 
         Self {
             in_sender: Some(in_sender),
@@ -179,8 +257,8 @@ impl ActorPool {
     }
 
     #[instrument]
-    pub fn new_locked(config: &ActorPoolConfig) -> Arc<RwLock<Self>> {
-        Arc::new(RwLock::new(Self::new(config)))
+    pub fn new_locked(config: &ActorPoolConfig, conn: DatabaseConnection) -> Arc<RwLock<Self>> {
+        Arc::new(RwLock::new(Self::new(config, conn)))
     }
 
     #[instrument]

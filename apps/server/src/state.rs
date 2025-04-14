@@ -13,7 +13,7 @@ use reqwest::{ClientBuilder, redirect::Policy, tls::Certificate};
 use sea_orm::{Database, DatabaseConnection, entity::*, query::*};
 use url::Url;
 
-use super::{config::ServerConfig, structs::OidcClient};
+use super::{config::ServerConfig, utils::OidcClient};
 use crate::actor::ActorPool;
 
 pub const CHARS: [char; 64] = [
@@ -109,7 +109,7 @@ impl ServerState {
 
         let key = Key::generate();
 
-        let pool = ActorPool::new(&config.actors);
+        let pool = ActorPool::new(&config.actors, conn.clone());
 
         Self {
             conn,
