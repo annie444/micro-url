@@ -14,45 +14,40 @@ use serde::{Deserialize, Serialize};
     utoipa :: ToSchema,
     ts_rs :: TS,
 )]
-#[sea_orm(table_name = "user")]
+#[sea_orm(table_name = "views")]
 #[ts(export)]
 #[ts(export_to = "../../../js/frontend/src/lib/types/")]
-#[ts(rename = "User")]
+#[ts(rename = "Views")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false)]
-    pub user_id: Uuid,
-    pub name: String,
-    #[sea_orm(unique)]
-    pub email: String,
+    #[sea_orm(primary_key)]
+    pub id: i32,
+    pub short_link: String,
+    #[sea_orm(column_type = "JsonBinary", nullable)]
+    #[ts(optional)]
+    pub headers: Option<Json>,
+    #[sea_orm(column_type = "custom(\"inet\")", nullable)]
+    #[ts(optional, as = "Option<String>")]
+    #[schema(value_type = Option<String>)]
+    pub ip: Option<IpNetwork>,
+    pub cache_hit: bool,
     pub created_at: DateTime,
-    pub updated_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::sessions::Entity")]
-    Sessions,
-    #[sea_orm(has_many = "super::short_link::Entity")]
+    #[sea_orm(
+        belongs_to = "super::short_link::Entity",
+        from = "Column::ShortLink",
+        to = "super::short_link::Column::Id",
+        on_update = "Cascade",
+        on_delete = "Cascade"
+    )]
     ShortLink,
-    #[sea_orm(has_many = "super::user_pass::Entity")]
-    UserPass,
-}
-
-impl Related<super::sessions::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Sessions.def()
-    }
 }
 
 impl Related<super::short_link::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::ShortLink.def()
-    }
-}
-
-impl Related<super::user_pass::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::UserPass.def()
     }
 }
 

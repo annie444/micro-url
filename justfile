@@ -21,7 +21,7 @@ install:
   fi
   # Install sea-orm-cli
   if ! command -v sea-orm-cli &> /dev/null; then
-    cargo install sea-orm-cli
+    cargo install sea-orm-cli -F async-std,cli,codegen,sea-orm-codegen,postgres-vector,runtime-tokio-native-tls
   fi
   # Install shuttle
   if ! command -v shuttle &> /dev/null; then
@@ -77,6 +77,13 @@ test:
 [group("nx")]
 nx *args:
   pnpm exec nx {{args}}
+
+[doc("formats all files")]
+format:
+  pnpm exec eslint . --fix 
+  pnpm exec prettier --write .
+  cargo clippy --fix
+  cargo fmt --all
 
 [doc("Runs the project in dev mode (`no hot-reloading`)")]
 [group("dev")]

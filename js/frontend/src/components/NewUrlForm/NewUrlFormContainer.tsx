@@ -23,7 +23,7 @@ export function NewUrlFormContainer() {
     const response = new Promise<{ data: { short_url: string } }>(
       (resolve, reject) => {
         axios
-          .post("/api/shorten", {
+          .post("/api/url/new", {
             url: url,
             short: miniUrl,
           })

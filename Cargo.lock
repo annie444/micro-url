@@ -463,6 +463,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-client-ip"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9329923fe6c30624095e63cb6c25796b32ffbf5d1da8c3a95d1054c301db92a"
+dependencies = [
+ "axum",
+ "forwarded-header-value",
+ "serde",
+]
+
+[[package]]
 name = "axum-core"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1475,6 +1486,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "forwarded-header-value"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8835f84f38484cc86f110a805655697908257fb9a7af005234060891557198e9"
+dependencies = [
+ "nonempty",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "from_variant"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2187,6 +2208,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "469fb0b9cefa57e3ef31275ee7cacb78f2fdca44e4765491884a2b119d4eb130"
 
 [[package]]
+name = "ipnetwork"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf466541e9d546596ee94f9f69590f89473455f88372423e0008fc1a7daf100e"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "iri-string"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2465,6 +2495,12 @@ name = "new_debug_unreachable"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
+
+[[package]]
+name = "nonempty"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9e591e719385e6ebaeb5ce5d3887f7d5676fceca6411d1925ccc95745f3d6f7"
 
 [[package]]
 name = "nu-ansi-term"
@@ -3617,6 +3653,7 @@ dependencies = [
  "bigdecimal",
  "chrono",
  "futures-util",
+ "ipnetwork",
  "log",
  "ouroboros",
  "pgvector",
@@ -3691,6 +3728,7 @@ dependencies = [
  "bigdecimal",
  "chrono",
  "inherent",
+ "ipnetwork",
  "ordered-float 4.6.0",
  "rust_decimal",
  "sea-query-derive",
@@ -3707,6 +3745,7 @@ checksum = "b0019f47430f7995af63deda77e238c17323359af241233ec768aba1faea7608"
 dependencies = [
  "bigdecimal",
  "chrono",
+ "ipnetwork",
  "rust_decimal",
  "sea-query",
  "serde_json",
@@ -3922,6 +3961,7 @@ version = "0.1.0"
 dependencies = [
  "argon2",
  "axum",
+ "axum-client-ip",
  "axum-extra",
  "chrono",
  "dotenvy",
@@ -4237,6 +4277,7 @@ dependencies = [
  "hashbrown 0.15.2",
  "hashlink",
  "indexmap 2.8.0",
+ "ipnetwork",
  "log",
  "memchr",
  "native-tls",
@@ -4367,6 +4408,7 @@ dependencies = [
  "hkdf",
  "hmac",
  "home",
+ "ipnetwork",
  "itoa",
  "log",
  "md-5",
@@ -5341,7 +5383,8 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "utoipa"
 version = "5.3.1"
-source = "git+https://github.com/juhaku/utoipa.git?rev=ca6b2a5#ca6b2a583d29eeca8d335144d0c29c8426145406"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "435c6f69ef38c9017b4b4eea965dfb91e71e53d869e896db40d1cf2441dd75c0"
 dependencies = [
  "indexmap 2.8.0",
  "serde",
@@ -5352,7 +5395,8 @@ dependencies = [
 [[package]]
 name = "utoipa-axum"
 version = "0.2.0"
-source = "git+https://github.com/juhaku/utoipa.git?rev=ca6b2a5#ca6b2a583d29eeca8d335144d0c29c8426145406"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c25bae5bccc842449ec0c5ddc5cbb6a3a1eaeac4503895dc105a1138f8234a0"
 dependencies = [
  "axum",
  "paste",
@@ -5364,7 +5408,8 @@ dependencies = [
 [[package]]
 name = "utoipa-config"
 version = "0.1.2"
-source = "git+https://github.com/juhaku/utoipa.git?rev=ca6b2a5#ca6b2a583d29eeca8d335144d0c29c8426145406"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06638ae95f08a14f307292bcf2e8ae34b6adbec526190a46a83d27363007a81e"
 dependencies = [
  "serde",
  "serde_json",
@@ -5373,7 +5418,8 @@ dependencies = [
 [[package]]
 name = "utoipa-gen"
 version = "5.3.1"
-source = "git+https://github.com/juhaku/utoipa.git?rev=ca6b2a5#ca6b2a583d29eeca8d335144d0c29c8426145406"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a77d306bc75294fd52f3e99b13ece67c02c1a2789190a6f31d32f736624326f7"
 dependencies = [
  "once_cell",
  "proc-macro2",
@@ -5388,8 +5434,9 @@ dependencies = [
 
 [[package]]
 name = "utoipa-swagger-ui"
-version = "9.0.0"
-source = "git+https://github.com/juhaku/utoipa.git?rev=ca6b2a5#ca6b2a583d29eeca8d335144d0c29c8426145406"
+version = "9.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d29519b3c485df6b13f4478ac909a491387e9ef70204487c3b64b53749aec0be"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -6072,9 +6119,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "2.5.0"
+version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27c03817464f64e23f6f37574b4fdc8cf65925b5bfd2b0f2aedf959791941f88"
+checksum = "1dcb24d0152526ae49b9b96c1dcf71850ca1e0b882e4e28ed898a93c41334744"
 dependencies = [
  "arbitrary",
  "crc32fast",

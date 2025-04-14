@@ -53,6 +53,8 @@ pub enum ServerError {
     PasswordError(#[from] argon2::Error),
     #[error("Error hashing password: {0}")]
     PasswordHashError(#[from] argon2::password_hash::Error),
+    #[error("Error decoding header value: {0}")]
+    HeaderError(#[from] axum::http::header::ToStrError),
 }
 
 impl IntoResponse for ServerError {
@@ -139,6 +141,10 @@ impl IntoResponse for ServerError {
             Self::PasswordHashError(e) => {
                 error!("Password hash error: {}", e);
                 (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+            }
+            Self::HeaderError(e) => {
+                error!("Ascii decoding error: {}", e.to_string());
+                (StatusCode::BAD_REQUEST, e.to_string())
             }
         };
         response.into_response()
