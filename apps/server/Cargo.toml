@@ -35,7 +35,7 @@ shuttle-shared-db = { version = "0.53.0", features = [
   "sqlx",
   "sqlx-native-tls",
 ] }
-lru = "0.13.0"
+lru = "0.14.0"
 tracing = { version = "0.1.41", features = ["log", "async-await"] }
 tracing-subscriber = { version = "0.3.19", features = [
   "chrono",
@@ -49,7 +49,7 @@ dotenvy = "0.15.7"
 axum-extra = { version = "0.10.1", features = ["cookie-private", "cookie"] }
 thiserror = "2.0.12"
 reqwest = { version = "0.12.15", features = ["native-tls"] }
-sqlx = "0.8.3"
+sqlx = "0.8.4"
 url = { version = "2.5.4", features = ["serde"] }
 time = "0.3.41"
 openidconnect = { version = "4", features = ["native-tls", "reqwest"] }
