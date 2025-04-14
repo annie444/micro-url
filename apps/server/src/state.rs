@@ -104,7 +104,7 @@ impl ServerState {
             Some(ClientSecret::new(config.oidc.client_secret.clone())),
         )
         .set_redirect_uri(
-            RedirectUrl::new(format!("{}/auth/callback", config.external_url))
+            RedirectUrl::new(format!("{}/api/user/oidc/callback", config.external_url))
                 .expect("Invalid redirect URL"),
         );
 
