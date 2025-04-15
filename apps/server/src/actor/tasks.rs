@@ -31,7 +31,7 @@ pub(super) async fn clean_urls(db: DbInput) -> Result<ActorOutputMessage, ActorE
         Ok(_) => (),
         Err(e) => {
             error!(
-                "Transation error when attempting to clean expired links: {}",
+                "Transaction error when attempting to clean expired links: {}",
                 e.to_string()
             );
             return Err(e.into());
@@ -64,7 +64,7 @@ pub(super) async fn clean_sessions(db: DbInput) -> Result<ActorOutputMessage, Ac
         Ok(_) => (),
         Err(e) => {
             error!(
-                "Transation error when attempting to clean expired sessions: {}",
+                "Transaction error when attempting to clean expired sessions: {}",
                 e.to_string()
             );
             return Err(e.into());
