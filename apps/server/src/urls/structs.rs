@@ -41,6 +41,7 @@ pub struct QrCodeParams {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema, TS)]
 #[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[serde(rename_all = "lowercase")]
 pub enum ImageFormats {
     Png,
     Webp,

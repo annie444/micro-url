@@ -75,7 +75,7 @@ pub async fn qr_code(
         if let Some(alpha) = format.fg_alpha {
             qr.dark_color(Rgba([red, green, blue, alpha]));
         } else {
-            qr.dark_color(Rgba([red, green, blue, 100]));
+            qr.dark_color(Rgba([red, green, blue, 255]));
         }
     }
 
@@ -83,7 +83,7 @@ pub async fn qr_code(
         if let Some(alpha) = format.bg_alpha {
             qr.light_color(Rgba([red, green, blue, alpha]));
         } else {
-            qr.light_color(Rgba([red, green, blue, 100]));
+            qr.light_color(Rgba([red, green, blue, 255]));
         }
     }
 
