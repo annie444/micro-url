@@ -8,6 +8,6 @@ export type QrCodeResponse =
   | BasicError
   | BasicError
   | BasicError
-  | Array<number>
-  | Array<number>
-  | Array<number>;
+  | number[]
+  | number[]
+  | number[];
