@@ -13,12 +13,12 @@ interface NotifyProps {
   options?: ExternalToast;
 }
 
-interface WithPromiseArgs<T> {
-  response: Promise<{ data: T }>;
+interface WithPromiseArgs<T, E> {
+  response: Promise<T>;
   successMessage: string;
-  successDescription?: string | ((res: { data: T }) => string);
-  successAction?: (res: { data: T }) => ReactNode;
-  errorMessage: string;
+  successDescription?: string | ((res: T) => string);
+  successAction?: (res: T) => ReactNode;
+  errorMessage: E;
 }
 
 export const notify = {
@@ -56,13 +56,13 @@ export const notify = {
   },
 };
 
-export async function notifyWithPromise<T>({
+export async function notifyWithPromise<T, E>({
   response,
   successAction,
   successMessage,
   errorMessage,
   successDescription,
-}: WithPromiseArgs<T>) {
+}: WithPromiseArgs<T, E>) {
   return toast.promise(response, {
     success: (res) => {
       return {
@@ -76,7 +76,7 @@ export async function notifyWithPromise<T>({
         action: successAction ? successAction(res) : undefined,
       };
     },
-    error: (err) => {
+    error: (err: E) => {
       console.log(err);
       return {
         message: errorMessage,
