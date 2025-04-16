@@ -55,6 +55,8 @@ time = "0.3.41"
 openidconnect = { version = "4", features = ["native-tls", "reqwest"] }
 argon2 = { version = "0.5", features = ["std"] }
 axum-client-ip = { version = "1.0.0", optional = true }
+async-channel = "2.3.1"
+regex = { version = "1.11.1", features = ["logging"] }
 
 [features]
 default = ["ips", "headers"]

@@ -3,6 +3,7 @@ set dotenv-load := true
 set dotenv-required := false
 set export := true
 
+[private]
 default:
   just --list
 
@@ -79,6 +80,7 @@ nx *args:
   pnpm exec nx {{args}}
 
 [doc("formats all files")]
+[group("dev")]
 format:
   pnpm exec eslint . --fix 
   pnpm exec prettier --write .
@@ -87,13 +89,17 @@ format:
 
 [doc("Runs the project in dev mode (`no hot-reloading`)")]
 [group("dev")]
-run $RUST_LOG="trace": oidc-up (nx "run frontend:build")
+run $RUST_LOG="trace": clean-shuttle oidc-up (nx "run frontend:build")
   #!/usr/bin/env bash
   set -eo pipefail
   if [ ! -f ./Secrets.toml ]; then
     cp Secrets.example.toml Secrets.toml
   fi
   shuttle run
+
+[doc("Removes the stale shuttle instance")]
+[group("dev")]
+clean-shuttle: (_container-down "shuttle_micro-url_shared_postgres")
 
 [doc("Reruns the entity generators (NOTE: you'll need to fix the `#[ts(rename=...)]` decorators manually)")]
 [group("db")]

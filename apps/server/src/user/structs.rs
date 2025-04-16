@@ -20,8 +20,8 @@ use utoipa::{IntoParams, IntoResponses, ToSchema};
 use uuid::Uuid;
 
 #[cfg(feature = "headers")]
-use crate::structs::HeaderMapDef;
-use crate::structs::{BasicError, BasicResponse};
+use crate::utils::HeaderMapDef;
+use crate::utils::{BasicError, BasicResponse};
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
 #[ts(export, export_to = "../../../js/frontend/src/lib/types/")]

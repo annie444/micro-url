@@ -8,6 +8,8 @@ use openidconnect::{Scope, core::CoreClaimName};
 use serde::{Deserialize, Serialize};
 use shuttle_runtime::SecretStore;
 
+use crate::actor::ActorPoolConfig;
+
 #[cfg(feature = "ips")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(clippy::derivable_impls)]
@@ -21,6 +23,7 @@ pub struct ServerConfig {
     pub assets_path: String,
     pub oidc: OidcConfig,
     pub ip_source: ClientIpSource,
+    pub actors: ActorPoolConfig,
 }
 
 #[cfg(not(feature = "ips"))]
@@ -35,6 +38,7 @@ pub struct ServerConfig {
     pub scheme: String,
     pub assets_path: String,
     pub oidc: OidcConfig,
+    pub actors: ActorPoolConfig,
 }
 
 #[cfg(not(feature = "ips"))]
@@ -49,6 +53,7 @@ impl Default for ServerConfig {
             port: 3000,
             scheme: "http".to_string(),
             assets_path: "../../js/frontend/dist".to_string(),
+            actors: ActorPoolConfig::default(),
         }
     }
 }
@@ -66,6 +71,7 @@ impl Default for ServerConfig {
             scheme: "http".to_string(),
             assets_path: "../../js/frontend/dist".to_string(),
             ip_source: ClientIpSource::RightmostXForwardedFor,
+            actors: ActorPoolConfig::default(),
         }
     }
 }
@@ -91,27 +97,32 @@ pub struct OidcConfig {
     pub cert_path: Option<String>,
 }
 
+pub trait GetConfig {
+    fn from_env() -> Self;
+    fn from_secret(secrets: SecretStore) -> Self;
+}
+
 #[cfg(feature = "ips")]
-impl ServerConfig {
+impl GetConfig for ServerConfig {
     #[tracing::instrument]
-    pub fn from_env() -> Self {
+    fn from_env() -> Self {
         dotenvy::dotenv().ok();
         let db = ServerDatabaseConfig::from_env();
-        let addr = get_env_var("ADDR").unwrap_or("127.0.0.1".to_string());
-        let port: u16 = get_env_var("PORT")
+        let addr = env::var("ADDR").unwrap_or("127.0.0.1".to_string());
+        let port: u16 = env::var("PORT")
             .unwrap_or("3000".to_string())
             .parse()
             .expect("PORT must be a number");
-        let scheme = get_env_var("SCHEME").unwrap_or("http".to_string());
-        let internal_url = get_env_var("INTERNAL_URL").unwrap_or(format!("{}:{}", addr, port));
-        let external_url = get_env_var("EXTERNAL_URL")
-            .unwrap_or_else(|| format!("{}://{}", &scheme, &internal_url));
-        let assets_path =
-            get_env_var("ASSETS_PATH").unwrap_or("../../js/frontend/dist".to_string());
+        let scheme = env::var("SCHEME").unwrap_or("http".to_string());
+        let internal_url = env::var("INTERNAL_URL").unwrap_or(format!("{}:{}", addr, port));
+        let external_url =
+            env::var("EXTERNAL_URL").unwrap_or(format!("{}://{}", &scheme, &internal_url));
+        let assets_path = env::var("ASSETS_PATH").unwrap_or("../../js/frontend/dist".to_string());
         let oidc = OidcConfig::from_env();
-        let ip_source: ClientIpSource = get_env_var("IP_SOURCE_HEADER")
+        let ip_source: ClientIpSource = env::var("IP_SOURCE_HEADER")
             .map(|v| ClientIpSource::from_str(&v).expect("Unable to parse the IP_SOURCE_HEADER"))
             .unwrap_or(ClientIpSource::RightmostXForwardedFor);
+        let actors = ActorPoolConfig::from_env();
         Self {
             db,
             internal_url,
@@ -122,11 +133,12 @@ impl ServerConfig {
             assets_path,
             oidc,
             ip_source,
+            actors,
         }
     }
 
     #[tracing::instrument(skip(secrets))]
-    pub fn from_secret(secrets: SecretStore) -> Self {
+    fn from_secret(secrets: SecretStore) -> Self {
         let oidc = OidcConfig::from_secret(secrets.clone());
         let external_url = secrets
             .get("EXTERNAL_URL")
@@ -138,11 +150,13 @@ impl ServerConfig {
             .get("IP_SOURCE_HEADER")
             .map(|v| ClientIpSource::from_str(&v).expect("Unable to parse the IP_SOURCE_HEADER"))
             .unwrap_or(ClientIpSource::RightmostXForwardedFor);
+        let actors = ActorPoolConfig::from_secret(secrets);
         Self {
             oidc,
             external_url,
             assets_path,
             ip_source,
+            actors,
             ..Self::default()
         }
     }
@@ -154,19 +168,18 @@ impl ServerConfig {
     pub fn from_env() -> Self {
         dotenvy::dotenv().ok();
         let db = ServerDatabaseConfig::from_env();
-        let addr = get_env_var("ADDR").unwrap_or_else(|| "127.0.0.1".to_string());
-        let port: u16 = get_env_var("PORT")
-            .unwrap_or_else(|| "3000".to_string())
+        let addr = env::var("ADDR").unwrap_or("127.0.0.1".to_string());
+        let port: u16 = env::var("PORT")
+            .unwrap_or("3000".to_string())
             .parse()
             .expect("PORT must be a number");
-        let scheme = get_env_var("SCHEME").unwrap_or_else(|| "http".to_string());
-        let internal_url =
-            get_env_var("INTERNAL_URL").unwrap_or_else(|| format!("{}:{}", addr, port));
-        let external_url = get_env_var("EXTERNAL_URL")
-            .unwrap_or_else(|| format!("{}://{}", &scheme, &internal_url));
-        let assets_path =
-            get_env_var("ASSETS_PATH").unwrap_or_else(|| "../../js/frontend/dist".to_string());
+        let scheme = env::var("SCHEME").unwrap_or("http".to_string());
+        let internal_url = env::var("INTERNAL_URL").unwrap_or(|| format!("{}:{}", addr, port));
+        let external_url =
+            env::var("EXTERNAL_URL").unwrap_or(format!("{}://{}", &scheme, &internal_url));
+        let assets_path = env::var("ASSETS_PATH").unwrap_or("../../js/frontend/dist".to_string());
         let oidc = OidcConfig::from_env();
+        let actors = ActorPoolConfig::from_env();
         Self {
             db,
             internal_url,
@@ -176,6 +189,7 @@ impl ServerConfig {
             scheme,
             assets_path,
             oidc,
+            actors,
         }
     }
 
@@ -188,31 +202,33 @@ impl ServerConfig {
         let assets_path = secrets
             .get("ASSETS_PATH")
             .unwrap_or_else(|| "../../js/frontend/dist".to_string());
+        let actors = ActorPoolConfig::from_secret(secrets);
         Self {
             oidc,
             external_url,
             assets_path,
+            actors,
             ..Self::default()
         }
     }
 }
 
-impl OidcConfig {
+impl GetConfig for OidcConfig {
     #[tracing::instrument]
-    pub fn from_env() -> Self {
-        let name = get_env_var("OIDC_NAME").unwrap_or_else(|| "default".to_string());
-        let client_id: String = get_env_var("OIDC_CLIENT_ID").expect("OIDC_CLIENT_ID is required");
+    fn from_env() -> Self {
+        let name = env::var("OIDC_NAME").unwrap_or("default".to_string());
+        let client_id: String = env::var("OIDC_CLIENT_ID").expect("OIDC_CLIENT_ID is required");
         let client_secret: String =
-            get_env_var("OIDC_CLIENT_SECRET").expect("OIDC_CLIENT_SECRET is required");
+            env::var("OIDC_CLIENT_SECRET").expect("OIDC_CLIENT_SECRET is required");
         let discovery_url: String =
-            get_env_var("OIDC_DISCOVERY_URL").expect("OIDC_DISCOVERY_URL is required");
-        let scopes: Vec<Scope> = get_env_var("OIDC_SCOPES")
-            .unwrap_or_else(|| "openid email profile".to_string())
+            env::var("OIDC_DISCOVERY_URL").expect("OIDC_DISCOVERY_URL is required");
+        let scopes: Vec<Scope> = env::var("OIDC_SCOPES")
+            .unwrap_or("openid email profile".to_string())
             .split_whitespace()
             .map(|s| Scope::new(s.to_string()))
             .collect();
-        let claims: Vec<CoreClaimName> = get_env_var("OIDC_CLAIMS")
-            .unwrap_or_else(|| {
+        let claims: Vec<CoreClaimName> = env::var("OIDC_CLAIMS")
+            .unwrap_or({
                 "sub aud email email_verified exp iat iss name given_name family_name \
                  preferred_username picture locale"
                     .to_string()
@@ -220,7 +236,7 @@ impl OidcConfig {
             .split_whitespace()
             .map(|s| CoreClaimName::new(s.to_string()))
             .collect();
-        let cert_path = get_env_var("OIDC_CERT_PATH");
+        let cert_path = env::var("OIDC_CERT_PATH").ok();
         Self {
             name,
             client_id,
@@ -233,10 +249,8 @@ impl OidcConfig {
     }
 
     #[tracing::instrument(skip(secrets))]
-    pub fn from_secret(secrets: SecretStore) -> Self {
-        let name: String = secrets
-            .get("OIDC_NAME")
-            .unwrap_or_else(|| "default".to_string());
+    fn from_secret(secrets: SecretStore) -> Self {
+        let name: String = secrets.get("OIDC_NAME").unwrap_or("default".to_string());
         let client_id: String = secrets
             .get("OIDC_CLIENT_ID")
             .expect("OIDC_CLIENT_ID is required");
@@ -248,13 +262,13 @@ impl OidcConfig {
             .expect("OIDC_DISCOVERY_URL is required");
         let scopes: Vec<Scope> = secrets
             .get("OIDC_SCOPES")
-            .unwrap_or_else(|| "openid email profile".to_string())
+            .unwrap_or("openid email profile".to_string())
             .split_whitespace()
             .map(|s| Scope::new(s.to_string()))
             .collect();
         let claims: Vec<CoreClaimName> = secrets
             .get("OIDC_CLAIMS")
-            .unwrap_or_else(|| {
+            .unwrap_or({
                 "sub aud email email_verified exp iat iss name given_name family_name \
                  preferred_username picture locale"
                     .to_string()
@@ -279,12 +293,12 @@ impl ServerDatabaseConfig {
     #[tracing::instrument]
     pub fn from_env() -> Self {
         dotenvy::dotenv().ok();
-        let username = get_env_var("DB_USER");
-        let password = get_env_var("DB_PASS");
-        let hostname = get_env_var("DB_HOST");
-        let port = get_env_var("DB_PORT");
-        let database = get_env_var("DB_NAME");
-        let schema = get_env_var("DB_SCHEMA");
+        let username = env::var("DB_USER").ok();
+        let password = env::var("DB_PASS").ok();
+        let hostname = env::var("DB_HOST").ok();
+        let port = env::var("DB_PORT").ok();
+        let database = env::var("DB_NAME").ok();
+        let schema = env::var("DB_SCHEMA").ok();
         Self {
             username,
             password,
@@ -323,9 +337,4 @@ impl ServerDatabaseConfig {
         }
         connection_str
     }
-}
-
-#[tracing::instrument]
-fn get_env_var(key: &str) -> Option<String> {
-    env::var(key).ok()
 }

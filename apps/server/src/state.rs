@@ -13,10 +13,8 @@ use reqwest::{ClientBuilder, redirect::Policy, tls::Certificate};
 use sea_orm::{Database, DatabaseConnection, entity::*, query::*};
 use url::Url;
 
-use super::{
-    config::{OidcConfig, ServerConfig},
-    structs::OidcClient,
-};
+use super::{config::ServerConfig, utils::OidcClient};
+use crate::actor::ActorPool;
 
 pub const CHARS: [char; 64] = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
@@ -31,15 +29,16 @@ pub struct ServerState {
     pub cache: LruCache<String, String>,
     pub url: Url,
     pub counter: usize,
-    pub oidc_config: OidcConfig,
+    pub config: ServerConfig,
     pub oidc_client: OidcClient,
     pub client: reqwest::Client,
     pub key: Key,
+    pub pool: ActorPool,
 }
 
 impl ServerState {
     #[tracing::instrument]
-    pub async fn new(config: &ServerConfig) -> Self {
+    pub async fn new(config: ServerConfig) -> Self {
         let connection_str = config.db.connection_string();
         let conn = Database::connect(connection_str).await.unwrap();
         Migrator::up(&conn, None).await.unwrap();
@@ -48,7 +47,7 @@ impl ServerState {
     }
 
     #[tracing::instrument]
-    pub async fn new_with_pool(config: &ServerConfig, pool: sqlx::PgPool) -> Self {
+    pub async fn new_with_pool(config: ServerConfig, pool: sqlx::PgPool) -> Self {
         let conn = DatabaseConnection::from(pool);
         Migrator::up(&conn, None).await.unwrap();
 
@@ -56,7 +55,7 @@ impl ServerState {
     }
 
     #[tracing::instrument]
-    pub async fn _defaults(config: &ServerConfig, conn: DatabaseConnection) -> Self {
+    pub async fn _defaults(config: ServerConfig, conn: DatabaseConnection) -> Self {
         let mut counter: usize = 100000000000;
 
         let num_urls: u64 = ShortLink::find().count(&conn).await.unwrap();
@@ -108,19 +107,20 @@ impl ServerState {
                 .expect("Invalid redirect URL"),
         );
 
-        let oidc_config = config.oidc.clone();
-
         let key = Key::generate();
+
+        let pool = ActorPool::new(&config.actors, conn.clone());
 
         Self {
             conn,
             cache,
             url,
             counter,
-            oidc_config,
             oidc_client,
             client,
             key,
+            pool,
+            config,
         }
     }
 

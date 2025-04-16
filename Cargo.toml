@@ -13,7 +13,7 @@ axum = { version = "0.8.3", features = [
 	'form',
 	'query',
 ] }
-tokio = { version = "1.44.2", features = ["full"] }
+tokio = { version = "1.44.2", features = ["full", "tracing"] }
 utoipa = { version = "5.3.1", features = [
 	"axum_extras",
 	"auto_into_responses",

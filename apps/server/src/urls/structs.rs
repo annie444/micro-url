@@ -10,7 +10,7 @@ use ts_rs::TS;
 use utoipa::{IntoResponses, ToSchema};
 use uuid::Uuid;
 
-use crate::structs::BasicError;
+use crate::utils::BasicError;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
 #[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
@@ -219,6 +219,8 @@ pub enum GetUrlResponse {
     UrlNotFound,
     #[response(status = StatusCode::PERMANENT_REDIRECT)]
     Redirect(#[to_schema] String),
+    #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
+    ViewError(#[to_schema] BasicError),
 }
 
 impl IntoResponse for GetUrlResponse {
@@ -235,6 +237,9 @@ impl IntoResponse for GetUrlResponse {
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
             GetUrlResponse::Redirect(url) => Redirect::permanent(&url).into_response(),
+            GetUrlResponse::ViewError(e) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
+            }
         }
     }
 }
@@ -243,6 +248,14 @@ impl From<sea_orm::DbErr> for GetUrlResponse {
     fn from(e: sea_orm::DbErr) -> Self {
         GetUrlResponse::DatabaseError(BasicError {
             error: e.to_string(),
+        })
+    }
+}
+
+impl From<async_channel::SendError<crate::actor::ActorInputMessage>> for GetUrlResponse {
+    fn from(value: async_channel::SendError<crate::actor::ActorInputMessage>) -> Self {
+        Self::ViewError(BasicError {
+            error: value.to_string(),
         })
     }
 }

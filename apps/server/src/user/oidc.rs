@@ -32,7 +32,7 @@ use crate::state::ServerState;
 )]
 pub async fn get_oidc_provider(State(state): State<ServerState>) -> OidcNameResponse {
     OidcNameResponse::OidcName(OidcName {
-        name: state.oidc_config.name.clone(),
+        name: state.config.oidc.name.clone(),
     })
 }
 
@@ -217,26 +217,26 @@ pub async fn oidc_login(
             CsrfToken::new_random,
             Nonce::new_random,
         )
-        .add_scopes(state.oidc_config.scopes.clone())
+        .add_scopes(state.config.oidc.scopes.clone())
         .set_pkce_challenge(pkce_challenge)
         .url();
 
     let verifier_cookie = Cookie::build(("verifier", pkce_verifier.secret().to_owned()))
-        .secure(if cfg!(debug_assertions) { false } else { true })
+        .secure(!cfg!(debug_assertions))
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")
         .domain(format!(".{}", state.url.domain().unwrap()));
 
     let nonce_cookie = Cookie::build(("nonce", nonce.secret().to_owned()))
-        .secure(if cfg!(debug_assertions) { false } else { true })
+        .secure(!cfg!(debug_assertions))
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")
         .domain(format!(".{}", state.url.domain().unwrap()));
 
     let csrf_token_cookie = Cookie::build(("csrf_token", csrf_token.secret().to_owned()))
-        .secure(if cfg!(debug_assertions) { false } else { true })
+        .secure(!cfg!(debug_assertions))
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")
