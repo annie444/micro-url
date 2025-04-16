@@ -413,9 +413,7 @@ impl From<sea_orm::DbErr> for UserLinksResponse {
 
 impl From<sea_orm::TransactionError<sea_orm::DbErr>> for UserLinksResponse {
     fn from(value: sea_orm::TransactionError<sea_orm::DbErr>) -> Self {
-        Self::DatabaseError(
-            format!("Error commit database transaction: {}", value.to_string()).into(),
-        )
+        Self::DatabaseError(format!("Error commit database transaction: {}", value).into())
     }
 }
 

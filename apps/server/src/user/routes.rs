@@ -138,7 +138,7 @@ pub async fn get_user_urls(
         .all(&state.conn)
         .await?;
 
-    Ok(UserLinksResponse::UserLinks(res.into()))
+    Ok(UserLinksResponse::UserLinks(res))
 }
 
 #[instrument]

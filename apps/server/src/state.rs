@@ -138,7 +138,7 @@ impl ServerState {
     #[tracing::instrument]
     pub fn get(&mut self, key: &str) -> Option<String> {
         let mut cache: MutexGuard<LruCache<String, String>> = self.cache.lock().unwrap();
-        (*cache).get(key).map(|s| s.clone())
+        (*cache).get(key).cloned()
     }
 
     #[tracing::instrument]
@@ -151,7 +151,7 @@ impl ServerState {
     pub fn increment(&mut self) -> String {
         let mut num: MutexGuard<usize> = self.counter.lock().unwrap();
         *num += 1;
-        let mut num: usize = (*num).clone();
+        let mut num: usize = *num;
         let estimated_length = num.next_power_of_two().trailing_zeros().max(1);
         let mut b64 = String::with_capacity(estimated_length as usize);
 
