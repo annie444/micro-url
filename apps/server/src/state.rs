@@ -17,7 +17,7 @@ use sea_orm::{Database, DatabaseConnection, entity::*, query::*};
 use url::Url;
 
 use super::{config::ServerConfig, utils::OidcClient};
-use crate::actor::ActorPool;
+use crate::{actor::ActorPool, error::ArcMutexError};
 
 pub const CHARS: [char; 64] = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
@@ -130,26 +130,53 @@ impl ServerState {
     }
 
     #[tracing::instrument]
-    pub fn put(&mut self, key: String, val: String) -> Option<String> {
-        let mut cache: MutexGuard<LruCache<String, String>> = self.cache.lock().unwrap();
-        (*cache).put(key, val)
+    pub fn put(&self, key: String, val: String) -> Result<Option<String>, ArcMutexError> {
+        let mut cache: MutexGuard<LruCache<String, String>> =
+            self.cache.lock().map_err(|e| ArcMutexError {
+                error: format!(
+                    "Unable to acquire lock on the mutex with key {} and value {}. Got error: {}",
+                    key,
+                    val,
+                    e.to_string()
+                ),
+            })?;
+        Ok((*cache).put(key, val))
     }
 
     #[tracing::instrument]
-    pub fn get(&mut self, key: &str) -> Option<String> {
-        let mut cache: MutexGuard<LruCache<String, String>> = self.cache.lock().unwrap();
-        (*cache).get(key).cloned()
+    pub fn get(&self, key: &str) -> Result<Option<String>, ArcMutexError> {
+        let mut cache: MutexGuard<LruCache<String, String>> =
+            self.cache.lock().map_err(|e| ArcMutexError {
+                error: format!(
+                    "Unable to acquire lock on the mutex with key {}. Got error: {}",
+                    key,
+                    e.to_string()
+                ),
+            })?;
+        Ok((*cache).get(key).cloned())
     }
 
     #[tracing::instrument]
-    pub fn pop(&mut self, key: &str) -> Option<(String, String)> {
-        let mut cache: MutexGuard<LruCache<String, String>> = self.cache.lock().unwrap();
-        (*cache).pop_entry(key)
+    pub fn pop(&self, key: &str) -> Result<Option<(String, String)>, ArcMutexError> {
+        let mut cache: MutexGuard<LruCache<String, String>> =
+            self.cache.lock().map_err(|e| ArcMutexError {
+                error: format!(
+                    "Unable to acquire lock on the mutex with key {}. Got error: {}",
+                    key,
+                    e.to_string()
+                ),
+            })?;
+        Ok((*cache).pop_entry(key))
     }
 
     #[tracing::instrument]
-    pub fn increment(&mut self) -> String {
-        let mut num: MutexGuard<usize> = self.counter.lock().unwrap();
+    pub fn increment(&self) -> Result<String, ArcMutexError> {
+        let mut num: MutexGuard<usize> = self.counter.lock().map_err(|e| ArcMutexError {
+            error: format!(
+                "Unable to acquire lock on the mutex for the counter. Got error: {}",
+                e.to_string()
+            ),
+        })?;
         *num += 1;
         let mut num: usize = *num;
         let estimated_length = num.next_power_of_two().trailing_zeros().max(1);
@@ -162,6 +189,6 @@ impl ServerState {
             b64.insert(0, CHARS[num & 63]);
             num >>= 6;
         }
-        b64
+        Ok(b64)
     }
 }

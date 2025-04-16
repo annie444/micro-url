@@ -14,7 +14,7 @@ use ts_rs::TS;
 use utoipa::{IntoParams, IntoResponses, ToSchema};
 use uuid::Uuid;
 
-use crate::utils::BasicError;
+use crate::{error::ArcMutexError, utils::BasicError};
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoParams, TS)]
 #[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
@@ -71,6 +71,8 @@ pub enum QrCodeResponse {
     UrlNotFound,
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     EncodingError(#[to_schema] BasicError),
+    #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
+    CacheError(#[to_schema] BasicError),
     #[response(status = StatusCode::BAD_REQUEST)]
     IncorrectParams(#[to_schema] BasicError),
     #[response(status = StatusCode::OK, content_type = "image/png; charset=utf-8", headers(["content-disposition: attachment; filename=\"qrcode.png\""]))]
@@ -96,6 +98,12 @@ impl From<qrcode::types::QrError> for QrCodeResponse {
 impl From<image::error::ImageError> for QrCodeResponse {
     fn from(value: image::error::ImageError) -> Self {
         Self::EncodingError(value.to_string().into())
+    }
+}
+
+impl From<ArcMutexError> for QrCodeResponse {
+    fn from(value: ArcMutexError) -> Self {
+        Self::CacheError(value.to_string().into())
     }
 }
 
@@ -127,6 +135,10 @@ impl IntoResponse for QrCodeResponse {
     #[instrument]
     fn into_response(self) -> Response {
         match self {
+            Self::CacheError(e) => {
+                error!(%e);
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
+            }
             Self::UrlNotFound => {
                 error!("Url not found");
                 (
@@ -188,6 +200,8 @@ pub enum NewUrlResponse {
     DatabaseError(#[to_schema] BasicError),
     #[response(status = StatusCode::NOT_FOUND)]
     UrlNotFound,
+    #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
+    CacheError(#[to_schema] BasicError),
     #[response(status = StatusCode::OK)]
     UrlCreated(#[to_schema] short_link::Model),
 }
@@ -199,6 +213,10 @@ impl IntoResponse for NewUrlResponse {
             NewUrlResponse::UrlCreated(model) => {
                 info!("{:?}", model);
                 (StatusCode::OK, Json(model)).into_response()
+            }
+            Self::CacheError(e) => {
+                error!(%e);
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
             NewUrlResponse::UrlNotFound => {
                 error!("URL not found");
@@ -219,6 +237,12 @@ impl IntoResponse for NewUrlResponse {
                 (StatusCode::BAD_REQUEST, Json(e)).into_response()
             }
         }
+    }
+}
+
+impl From<ArcMutexError> for NewUrlResponse {
+    fn from(value: ArcMutexError) -> Self {
+        Self::CacheError(value.to_string().into())
     }
 }
 
@@ -244,6 +268,8 @@ impl From<url::ParseError> for NewUrlResponse {
 pub enum DeleteUrlResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),
+    #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
+    CacheError(#[to_schema] BasicError),
     #[response(status = StatusCode::BAD_REQUEST)]
     UrlNotFound,
     #[response(status = StatusCode::OK)]
@@ -254,6 +280,10 @@ impl IntoResponse for DeleteUrlResponse {
     #[instrument]
     fn into_response(self) -> Response {
         match self {
+            Self::CacheError(e) => {
+                error!(%e);
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
+            }
             DeleteUrlResponse::UrlDeleted => {
                 info!("URL deleted");
                 (
@@ -279,6 +309,12 @@ impl IntoResponse for DeleteUrlResponse {
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
         }
+    }
+}
+
+impl From<ArcMutexError> for DeleteUrlResponse {
+    fn from(value: ArcMutexError) -> Self {
+        Self::CacheError(value.to_string().into())
     }
 }
 
@@ -362,12 +398,18 @@ pub enum GetUrlResponse {
     Redirect(#[to_schema] String),
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     ViewError(#[to_schema] BasicError),
+    #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
+    CacheError(#[to_schema] BasicError),
 }
 
 impl IntoResponse for GetUrlResponse {
     #[instrument]
     fn into_response(self) -> Response {
         match self {
+            Self::CacheError(e) => {
+                error!(%e);
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
+            }
             GetUrlResponse::UrlNotFound => {
                 error!("URL not found");
                 (
@@ -391,6 +433,12 @@ impl IntoResponse for GetUrlResponse {
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
         }
+    }
+}
+
+impl From<ArcMutexError> for GetUrlResponse {
+    fn from(value: ArcMutexError) -> Self {
+        Self::CacheError(value.to_string().into())
     }
 }
 
