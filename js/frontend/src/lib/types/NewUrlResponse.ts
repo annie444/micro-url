@@ -2,4 +2,9 @@
 import type { BasicError } from "./BasicError";
 import type { ShortLink } from "./ShortLink";
 
-export type NewUrlResponse = BasicError | BasicError | null | ShortLink;
+export type NewUrlResponse =
+  | BasicError
+  | BasicError
+  | null
+  | BasicError
+  | ShortLink;

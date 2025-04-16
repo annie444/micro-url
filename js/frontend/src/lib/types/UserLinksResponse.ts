@@ -7,4 +7,4 @@ export type UserLinksResponse =
   | BasicError
   | BasicError
   | UserLinksAndViews
-  | UserLink[];
+  | Array<UserLink>;

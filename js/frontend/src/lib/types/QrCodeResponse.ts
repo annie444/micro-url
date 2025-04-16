@@ -7,6 +7,7 @@ export type QrCodeResponse =
   | null
   | BasicError
   | BasicError
-  | number[]
-  | number[]
-  | number[];
+  | BasicError
+  | Array<number>
+  | Array<number>
+  | Array<number>;
