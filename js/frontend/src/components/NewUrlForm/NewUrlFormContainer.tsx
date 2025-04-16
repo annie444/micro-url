@@ -1,4 +1,3 @@
-import type { AxiosResponse } from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm, type SubmitHandler } from "react-hook-form";
 
@@ -33,12 +32,10 @@ export function NewUrlFormContainer() {
       successMessage: "URL shortened successfully!",
       errorMessage: "Error shortening URL",
       successDescription: (res: ShortLink) =>
-        "Your shortened URL is: " + res.data.short_url,
+        "Your shortened URL is: " + res.short_url,
       successAction: (res: ShortLink) => {
         return (
-          <Button
-            onClick={() => navigator.clipboard.writeText(res.data.short_url)}
-          >
+          <Button onClick={() => navigator.clipboard.writeText(res.short_url)}>
             Copy
           </Button>
         );
