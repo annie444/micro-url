@@ -3,6 +3,6 @@
 export interface NewUrlRequest {
   url: string;
   short?: string;
-  user?: string
+  user?: string;
   expiry?: string;
 }
