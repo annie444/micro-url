@@ -135,9 +135,7 @@ impl ServerState {
             self.cache.lock().map_err(|e| ArcMutexError {
                 error: format!(
                     "Unable to acquire lock on the mutex with key {} and value {}. Got error: {}",
-                    key,
-                    val,
-                    e.to_string()
+                    key, val, e
                 ),
             })?;
         Ok((*cache).put(key, val))
@@ -149,8 +147,7 @@ impl ServerState {
             self.cache.lock().map_err(|e| ArcMutexError {
                 error: format!(
                     "Unable to acquire lock on the mutex with key {}. Got error: {}",
-                    key,
-                    e.to_string()
+                    key, e
                 ),
             })?;
         Ok((*cache).get(key).cloned())
@@ -162,8 +159,7 @@ impl ServerState {
             self.cache.lock().map_err(|e| ArcMutexError {
                 error: format!(
                     "Unable to acquire lock on the mutex with key {}. Got error: {}",
-                    key,
-                    e.to_string()
+                    key, e
                 ),
             })?;
         Ok((*cache).pop_entry(key))
@@ -174,7 +170,7 @@ impl ServerState {
         let mut num: MutexGuard<usize> = self.counter.lock().map_err(|e| ArcMutexError {
             error: format!(
                 "Unable to acquire lock on the mutex for the counter. Got error: {}",
-                e.to_string()
+                e
             ),
         })?;
         *num += 1;
