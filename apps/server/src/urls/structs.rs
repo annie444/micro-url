@@ -140,7 +140,7 @@ impl IntoResponse for QrCodeResponse {
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
             Self::UrlNotFound => {
-                error!("Url not found");
+                error!("URL not found");
                 (
                     StatusCode::NOT_FOUND,
                     Json(BasicError {
@@ -295,7 +295,7 @@ impl IntoResponse for DeleteUrlResponse {
                     .into_response()
             }
             DeleteUrlResponse::UrlNotFound => {
-                error!("Url not found");
+                error!("URL not found");
                 (
                     StatusCode::BAD_REQUEST,
                     Json(BasicError {
