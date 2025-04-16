@@ -11,12 +11,11 @@ use axum_client_ip::ClientIp;
 use entity::short_link;
 use image::{ImageFormat, Rgba};
 use qrcode::{EcLevel, QrCode, Version, render::Renderer};
-use sea_orm::{DbErr, RuntimeErr, entity::*, query::*};
-use tracing::{error, instrument};
+use sea_orm::entity::*;
+use tracing::instrument;
 
 use super::structs::{
-    GetExistingUrlError, ImageFormats, NewUrlRequest, NewUrlResponse, QrCodeResponse,
-    UpdateUrlResponse,
+    ImageFormats, NewUrlRequest, NewUrlResponse, QrCodeResponse, UpdateUrlResponse,
 };
 use crate::{
     actor::{ActorInputMessage, ViewInput},
@@ -61,7 +60,7 @@ pub async fn qr_code(
         return Err(QrCodeResponse::UrlNotFound);
     };
 
-    state.cache.put(id, short.original_url.clone());
+    state.put(id, short.original_url.clone());
 
     let qr = QrCode::with_version(
         short.short_url.into_bytes(),
@@ -138,83 +137,11 @@ pub async fn new_url(
         updated_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
     };
 
-    let new = match new_url.insert(&state.conn).await {
-        Ok(new) => new,
-        Err(e) => match e {
-            DbErr::Query(err) => match err {
-                RuntimeErr::SqlxError(error) => match error {
-                    sqlx::Error::Database(sql_err) => {
-                        error!("SQL Error: {}", sql_err);
-                        if sql_err.is_unique_violation() {
-                            get_existing_url(payload.url.clone(), &state.conn).await?
-                        } else {
-                            return Err(NewUrlResponse::DatabaseError(sql_err.to_string().into()));
-                        }
-                    }
-                    _ => {
-                        return Err(NewUrlResponse::DatabaseError(error.to_string().into()));
-                    }
-                },
-                _ => return Err(NewUrlResponse::DatabaseError(err.to_string().into())),
-            },
-            DbErr::Conn(err) => match err {
-                RuntimeErr::SqlxError(error) => match error {
-                    sqlx::Error::Database(sql_err) => {
-                        error!("SQL Error: {}", sql_err);
-                        if sql_err.is_unique_violation() {
-                            get_existing_url(payload.url.clone(), &state.conn).await?
-                        } else {
-                            return Err(NewUrlResponse::DatabaseError(sql_err.to_string().into()));
-                        }
-                    }
-                    _ => {
-                        return Err(NewUrlResponse::DatabaseError(error.to_string().into()));
-                    }
-                },
-                _ => return Err(NewUrlResponse::DatabaseError(err.to_string().into())),
-            },
-            DbErr::Exec(err) => match err {
-                RuntimeErr::SqlxError(error) => match error {
-                    sqlx::Error::Database(sql_err) => {
-                        error!("SQL Error: {}", sql_err);
-                        if sql_err.is_unique_violation() {
-                            get_existing_url(payload.url.clone(), &state.conn).await?
-                        } else {
-                            return Err(NewUrlResponse::DatabaseError(sql_err.to_string().into()));
-                        }
-                    }
-                    _ => {
-                        return Err(NewUrlResponse::DatabaseError(error.to_string().into()));
-                    }
-                },
-                _ => return Err(NewUrlResponse::DatabaseError(err.to_string().into())),
-            },
-            DbErr::RecordNotInserted => {
-                error!("Record not inserted");
-                get_existing_url(payload.url.clone(), &state.conn).await?
-            }
-            _ => return Err(NewUrlResponse::DatabaseError(e.to_string().into())),
-        },
-    };
+    let new = new_url.insert(&state.conn).await?;
 
-    state.cache.put(short, payload.url);
+    state.put(short, payload.url);
 
     Ok(NewUrlResponse::UrlCreated(new))
-}
-
-#[instrument(skip(conn))]
-pub async fn get_existing_url(
-    url: String,
-    conn: &impl ConnectionTrait,
-) -> Result<short_link::Model, GetExistingUrlError> {
-    let Some(link) = short_link::Entity::find()
-        .filter(short_link::Column::OriginalUrl.eq(url))
-        .one(conn)
-        .await?
-    else {
-        return Err(GetExistingUrlError::UrlNotFound);
-    };
-    Ok(link)
 }
 
 // /{id}
@@ -228,7 +155,7 @@ pub async fn get_url(
 ) -> Result<GetUrlResponse, GetUrlResponse> {
     if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
         Ok(GetUrlResponse::Redirect(id))
-    } else if let Some(url) = state.cache.get(&id) {
+    } else if let Some(url) = state.get(&id) {
         state
             .pool
             .send(ActorInputMessage::UpdateViews(ViewInput {
@@ -250,7 +177,7 @@ pub async fn get_url(
         let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
             return Err(GetUrlResponse::UrlNotFound);
         };
-        state.cache.put(id, short.original_url.clone());
+        state.put(id, short.original_url.clone());
         Ok(GetUrlResponse::Redirect(short.original_url))
     }
 }
@@ -266,7 +193,7 @@ pub async fn get_url(
 ) -> Result<GetUrlResponse, GetUrlResponse> {
     if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
         Ok(GetUrlResponse::Redirect(id))
-    } else if let Some(url) = state.cache.get(&id) {
+    } else if let Some(url) = state.get(&id) {
         state
             .pool
             .send(ActorInputMessage::UpdateViews(ViewInput {
@@ -290,7 +217,7 @@ pub async fn get_url(
         let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
             return Err(GetUrlResponse::UrlNotFound);
         };
-        state.cache.put(id, short.original_url.clone());
+        state.put(id, short.original_url.clone());
         Ok(GetUrlResponse::Redirect(short.original_url))
     }
 }
@@ -306,7 +233,7 @@ pub async fn get_url(
 ) -> Result<GetUrlResponse, GetUrlResponse> {
     if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
         Ok(GetUrlResponse::Redirect(id))
-    } else if let Some(url) = state.cache.get(&id) {
+    } else if let Some(url) = state.get(&id) {
         state
             .pool
             .send(ActorInputMessage::UpdateViews(ViewInput {
@@ -330,7 +257,7 @@ pub async fn get_url(
         let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
             return Err(GetUrlResponse::UrlNotFound);
         };
-        state.cache.put(id, short.original_url.clone());
+        state.put(id, short.original_url.clone());
         Ok(GetUrlResponse::Redirect(short.original_url))
     }
 }
@@ -347,7 +274,7 @@ pub async fn get_url(
 ) -> Result<GetUrlResponse, GetUrlResponse> {
     if id.starts_with("/api") || id.starts_with("/ui") || id.starts_with("/auth") {
         Ok(GetUrlResponse::Redirect(id))
-    } else if let Some(url) = state.cache.get(&id) {
+    } else if let Some(url) = state.get(&id) {
         state
             .pool
             .send(ActorInputMessage::UpdateViews(ViewInput {
@@ -373,7 +300,7 @@ pub async fn get_url(
         let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
             return Err(GetUrlResponse::UrlNotFound);
         };
-        state.cache.put(id, short.original_url.clone());
+        state.put(id, short.original_url.clone());
         Ok(GetUrlResponse::Redirect(short.original_url))
     }
 }
@@ -390,7 +317,7 @@ pub async fn delete_url(
         return Err(DeleteUrlResponse::UrlNotFound);
     };
     short.delete(&state.conn).await?;
-    state.cache.pop(&id);
+    state.pop(&id);
     Ok(DeleteUrlResponse::UrlDeleted)
 }
 

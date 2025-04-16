@@ -130,7 +130,7 @@ pub async fn oidc_callback(
 
     let token = token_response.access_token().secret().to_owned();
 
-    let cookie = Cookie::build(("sid", token.clone()))
+    let id_cookie = Cookie::build(("sid", token.clone()))
         .domain(format!(".{}", domain))
         .path("/")
         .secure(true)
@@ -155,14 +155,19 @@ pub async fn oidc_callback(
         ));
     };
 
+    let txn = state.conn.begin().await?;
+
     let user = match user::Entity::find()
         .filter(user::Column::Email.eq(email.as_str()))
-        .one(&state.conn)
+        .one(&txn)
         .await?
     {
         Some(user) => user,
         None => {
-            let user_id = Uuid::new_v4();
+            let mut user_id = Uuid::new_v4();
+            while user::Entity::find_by_id(user_id).one(&txn).await?.is_some() {
+                user_id = Uuid::new_v4();
+            }
 
             let new_user = user::ActiveModel {
                 user_id: ActiveValue::Set(user_id),
@@ -172,7 +177,7 @@ pub async fn oidc_callback(
                 updated_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
             };
 
-            new_user.insert(&state.conn).await?
+            new_user.insert(&txn).await?
         }
     };
 
@@ -183,11 +188,13 @@ pub async fn oidc_callback(
         expiry: ActiveValue::set(max_age),
     };
 
-    new_session.insert(&state.conn).await?;
+    new_session.insert(&txn).await?;
+
+    txn.commit().await?;
 
     Ok(OidcCallbackResponse::OidcCallback(
         "/ui".to_string(),
-        jar.add(cookie)
+        jar.add(id_cookie)
             .remove("verifier")
             .remove("nonce")
             .remove("csrf_token"),

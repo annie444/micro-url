@@ -1,4 +1,7 @@
-use std::num::NonZeroUsize;
+use std::{
+    num::NonZeroUsize,
+    sync::{Arc, Mutex, MutexGuard},
+};
 
 use axum::extract::FromRef;
 use axum_extra::extract::cookie::Key;
@@ -26,9 +29,9 @@ pub const CHARS: [char; 64] = [
 #[derive(FromRef, Debug, Clone)]
 pub struct ServerState {
     pub conn: DatabaseConnection,
-    pub cache: LruCache<String, String>,
+    cache: Arc<Mutex<LruCache<String, String>>>,
     pub url: Url,
-    pub counter: usize,
+    counter: Arc<Mutex<usize>>,
     pub config: ServerConfig,
     pub oidc_client: OidcClient,
     pub client: reqwest::Client,
@@ -62,7 +65,9 @@ impl ServerState {
 
         counter += num_urls as usize;
 
-        let cache = LruCache::new(NonZeroUsize::new(1000).unwrap());
+        let counter = Arc::new(Mutex::new(counter));
+
+        let cache = Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(1000).unwrap())));
 
         let url = Url::parse(&config.external_url).unwrap();
 
@@ -125,9 +130,28 @@ impl ServerState {
     }
 
     #[tracing::instrument]
+    pub fn put(&mut self, key: String, val: String) -> Option<String> {
+        let mut cache: MutexGuard<LruCache<String, String>> = self.cache.lock().unwrap();
+        (*cache).put(key, val)
+    }
+
+    #[tracing::instrument]
+    pub fn get(&mut self, key: &str) -> Option<String> {
+        let mut cache: MutexGuard<LruCache<String, String>> = self.cache.lock().unwrap();
+        (*cache).get(key).map(|s| s.clone())
+    }
+
+    #[tracing::instrument]
+    pub fn pop(&mut self, key: &str) -> Option<(String, String)> {
+        let mut cache: MutexGuard<LruCache<String, String>> = self.cache.lock().unwrap();
+        (*cache).pop_entry(key)
+    }
+
+    #[tracing::instrument]
     pub fn increment(&mut self) -> String {
-        self.counter += 1;
-        let mut num = self.counter;
+        let mut num: MutexGuard<usize> = self.counter.lock().unwrap();
+        *num += 1;
+        let mut num: usize = (*num).clone();
         let estimated_length = num.next_power_of_two().trailing_zeros().max(1);
         let mut b64 = String::with_capacity(estimated_length as usize);
 

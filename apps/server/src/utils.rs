@@ -1,6 +1,6 @@
 #[cfg(feature = "headers")]
 use std::collections::BTreeMap;
-use std::{sync::LazyLock, time::Duration};
+use std::{fmt::Display, sync::LazyLock, time::Duration};
 
 #[cfg(feature = "headers")]
 use axum::http::header::HeaderMap;
@@ -326,6 +326,12 @@ impl From<JsonValue> for HeaderMapDef {
 #[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct BasicError {
     pub error: String,
+}
+
+impl Display for BasicError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.error)
+    }
 }
 
 impl From<String> for BasicError {
