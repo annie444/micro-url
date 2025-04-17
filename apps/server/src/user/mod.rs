@@ -34,5 +34,6 @@ pub fn user_router(state: ServerState) -> OpenApiRouter {
         .routes(routes!(routes::get_user))
         .routes(routes!(routes::logout))
         .routes(routes!(routes::get_user_urls))
+        .routes(routes!(routes::get_user_url_page))
         .with_state(state)
 }
