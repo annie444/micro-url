@@ -39,7 +39,7 @@ export function NewUrlForm({ handleSubmit }: NewUrlFormProps) {
         )}
       />
       <FormField
-        {...register("miniUrl")}
+        {...register("short")}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Custom URL</FormLabel>

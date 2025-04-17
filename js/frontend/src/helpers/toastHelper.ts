@@ -14,10 +14,10 @@ interface NotifyProps {
 }
 
 interface WithPromiseArgs<T> {
-  response: Promise<{ data: T }>;
+  response: Promise<T>;
   successMessage: string;
-  successDescription?: string | ((res: { data: T }) => string);
-  successAction?: (res: { data: T }) => ReactNode;
+  successDescription?: string | ((res: T) => string);
+  successAction?: (res: T) => ReactNode;
   errorMessage: string;
 }
 

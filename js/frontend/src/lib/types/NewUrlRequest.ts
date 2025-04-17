@@ -2,7 +2,7 @@
 
 export interface NewUrlRequest {
   url: string;
-  short: string | null;
-  user: string | null;
-  expiry: string | null;
+  short?: string;
+  user?: string;
+  expiry?: string;
 }

@@ -1,4 +1,3 @@
-import axios from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm, type SubmitHandler } from "react-hook-form";
 
@@ -7,45 +6,34 @@ import { newUrlFormSchema, type NewUrlFormSchema } from "./NewUrlFormSchema";
 import { NewUrlForm } from "./NewUrlForm";
 import { ToastHelper, LocalStorageHelper } from "@/helpers";
 import { useEffect } from "react";
+import { urls } from "@/lib/api";
+import type { NewUrlRequest, ShortLink } from "@/lib/types";
 
 export function NewUrlFormContainer() {
   const formMethods = useForm<NewUrlFormSchema>({
     resolver: zodResolver(newUrlFormSchema),
     defaultValues: {
       url: "",
-      miniUrl: undefined,
+      short: undefined,
     },
     mode: "onSubmit",
   });
 
   const onSubmit: SubmitHandler<NewUrlFormSchema> = (values) => {
-    const { url, miniUrl } = values;
-    const response = new Promise<{ data: { short_url: string } }>(
-      (resolve, reject) => {
-        axios
-          .post("/api/url/new", {
-            url: url,
-            short: miniUrl,
-          })
-          .then((res) => {
-            resolve(res);
-          })
-          .catch((err) => {
-            reject(err);
-          });
-      },
-    );
+    const { url, short } = values;
+    const requestParams: NewUrlRequest = {
+      url: url,
+      short: short,
+    };
     ToastHelper.notifyWithPromise({
-      response,
+      response: urls.newUrl(requestParams),
       successMessage: "URL shortened successfully!",
       errorMessage: "Error shortening URL",
-      successDescription: (res) =>
-        "Your shortened URL is: " + res.data.short_url,
-      successAction: (res) => {
+      successDescription: (res: ShortLink) =>
+        "Your shortened URL is: " + res.short_url,
+      successAction: (res: ShortLink) => {
         return (
-          <Button
-            onClick={() => navigator.clipboard.writeText(res.data.short_url)}
-          >
+          <Button onClick={() => navigator.clipboard.writeText(res.short_url)}>
             Copy
           </Button>
         );
