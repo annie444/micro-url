@@ -29,3 +29,6 @@ export * from "./NewUserRequest.ts";
 export * from "./UserPass.ts";
 export * from "./UserView.ts";
 export * from "./Views.ts";
+export * from "./ImageFormats.ts";
+export * from "./QrCodeParams.ts";
+export * from "./QrCodeResponse.ts";

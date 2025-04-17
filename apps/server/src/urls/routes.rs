@@ -1,22 +1,122 @@
+use std::io::Cursor;
+
 #[cfg(feature = "headers")]
 use axum::http::HeaderMap;
 use axum::{
     Json, debug_handler,
-    extract::{Path, State},
+    extract::{Path, Query, State},
 };
 #[cfg(feature = "ips")]
 use axum_client_ip::ClientIp;
 use entity::short_link;
+use image::{ImageFormat, Rgba};
+use qrcode::{EcLevel, QrCode, Version, render::Renderer};
 use sea_orm::{DbErr, RuntimeErr, entity::*, query::*};
 use tracing::{error, instrument};
 
-use super::structs::{GetExistingUrlError, NewUrlRequest, NewUrlResponse, UpdateUrlResponse};
+use super::structs::{
+    GetExistingUrlError, ImageFormats, NewUrlRequest, NewUrlResponse, QrCodeResponse,
+    UpdateUrlResponse,
+};
 use crate::{
     actor::{ActorInputMessage, ViewInput},
     state::ServerState,
-    urls::structs::{DeleteUrlResponse, GetUrlInfoResponse, GetUrlResponse},
+    urls::structs::{DeleteUrlResponse, GetUrlInfoResponse, GetUrlResponse, QrCodeParams},
 };
-// /api/shorten
+
+#[instrument]
+#[debug_handler]
+#[utoipa::path(get, path = "/qr/{id}", context_path = super::URL_PREFIX, params(("id", description = "The short url ID"), QrCodeParams), responses(QrCodeResponse), tag = super::URL_TAG)]
+pub async fn qr_code(
+    Path(id): Path<String>,
+    Query(format): Query<QrCodeParams>,
+    State(mut state): State<ServerState>,
+) -> Result<QrCodeResponse, QrCodeResponse> {
+    if (format.fg_red.is_some()
+        || format.fg_green.is_some()
+        || format.fg_blue.is_some()
+        || format.fg_alpha.is_some())
+        && !(format.fg_red.is_some() && format.fg_green.is_some() && format.fg_blue.is_some())
+    {
+        return Err(QrCodeResponse::IncorrectParams(
+            "Must supply all of fg_red, fg_green, and fg_blue"
+                .to_string()
+                .into(),
+        ));
+    }
+    if (format.bg_red.is_some()
+        || format.bg_green.is_some()
+        || format.bg_blue.is_some()
+        || format.bg_alpha.is_some())
+        && !(format.bg_red.is_some() && format.bg_green.is_some() && format.bg_blue.is_some())
+    {
+        return Err(QrCodeResponse::IncorrectParams(
+            "Must supply all of bg_red, bg_green, and bg_blue"
+                .to_string()
+                .into(),
+        ));
+    }
+
+    let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
+        return Err(QrCodeResponse::UrlNotFound);
+    };
+
+    state.cache.put(id, short.original_url.clone());
+
+    let qr = QrCode::with_version(
+        short.short_url.into_bytes(),
+        Version::Normal(15),
+        EcLevel::H,
+    )?;
+
+    let mut qr: Renderer<'_, Rgba<u8>> = qr.render();
+
+    if let (Some(red), Some(green), Some(blue)) = (format.fg_red, format.fg_green, format.fg_blue) {
+        if let Some(alpha) = format.fg_alpha {
+            qr.dark_color(Rgba([red, green, blue, alpha]));
+        } else {
+            qr.dark_color(Rgba([red, green, blue, 255]));
+        }
+    }
+
+    if let (Some(red), Some(green), Some(blue)) = (format.bg_red, format.bg_green, format.bg_blue) {
+        if let Some(alpha) = format.bg_alpha {
+            qr.light_color(Rgba([red, green, blue, alpha]));
+        } else {
+            qr.light_color(Rgba([red, green, blue, 255]));
+        }
+    }
+
+    let mut img_buf = Cursor::new(Vec::new());
+
+    let img = qr.build();
+
+    match format.format {
+        Some(format) => match format {
+            ImageFormats::Png => {
+                img.write_to(&mut img_buf, ImageFormat::Png)?;
+                let data = img_buf.into_inner();
+                Ok(QrCodeResponse::QrCodePng(data))
+            }
+            ImageFormats::Webp => {
+                img.write_to(&mut img_buf, ImageFormat::WebP)?;
+                let data = img_buf.into_inner();
+                Ok(QrCodeResponse::QrCodeWebp(data))
+            }
+            ImageFormats::Jpeg => {
+                img.write_to(&mut img_buf, ImageFormat::Jpeg)?;
+                let data = img_buf.into_inner();
+                Ok(QrCodeResponse::QrCodeJpeg(data))
+            }
+        },
+        None => {
+            img.write_to(&mut img_buf, ImageFormat::Png)?;
+            let data = img_buf.into_inner();
+            Ok(QrCodeResponse::QrCodePng(data))
+        }
+    }
+}
+
 #[instrument]
 #[debug_handler]
 #[utoipa::path(post, path = "/new", context_path = super::URL_PREFIX, request_body = NewUrlRequest, responses(NewUrlResponse), tag = super::URL_TAG)]

@@ -1,16 +1,147 @@
+use std::{borrow::Cow, fmt::Display};
+
 use axum::{
     Json,
-    http::StatusCode,
+    body::Body,
+    http::{StatusCode, header},
     response::{IntoResponse, Redirect, Response},
 };
 use chrono::NaiveDateTime;
 use entity::short_link;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use utoipa::{IntoResponses, ToSchema};
+use utoipa::{IntoParams, IntoResponses, ToSchema};
 use uuid::Uuid;
 
 use crate::utils::BasicError;
+
+#[derive(Debug, Clone, Serialize, Deserialize, IntoParams, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[into_params(parameter_in = Query, style = Form)]
+pub struct QrCodeParams {
+    #[ts(optional)]
+    pub format: Option<ImageFormats>,
+    #[ts(optional)]
+    pub bg_red: Option<u8>,
+    #[ts(optional)]
+    pub bg_green: Option<u8>,
+    #[ts(optional)]
+    pub bg_blue: Option<u8>,
+    #[ts(optional)]
+    pub bg_alpha: Option<u8>,
+    #[ts(optional)]
+    pub fg_red: Option<u8>,
+    #[ts(optional)]
+    pub fg_green: Option<u8>,
+    #[ts(optional)]
+    pub fg_blue: Option<u8>,
+    #[ts(optional)]
+    pub fg_alpha: Option<u8>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[serde(rename_all = "lowercase")]
+pub enum ImageFormats {
+    Png,
+    Webp,
+    Jpeg,
+}
+
+impl Display for ImageFormats {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Png => write!(f, "png"),
+            Self::Webp => write!(f, "webp"),
+            Self::Jpeg => write!(f, "jpeg"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+pub enum QrCodeResponse {
+    #[response(status = StatusCode::BAD_REQUEST)]
+    UrlParseError(#[to_schema] BasicError),
+    #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
+    DatabaseError(#[to_schema] BasicError),
+    #[response(status = StatusCode::NOT_FOUND)]
+    UrlNotFound,
+    #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
+    EncodingError(#[to_schema] BasicError),
+    #[response(status = StatusCode::BAD_REQUEST)]
+    IncorrectParams(#[to_schema] BasicError),
+    #[response(status = StatusCode::OK, content_type = "image/png; charset=utf-8", headers(["content-disposition: attachment; filename=\"qrcode.png\""]))]
+    QrCodePng(#[to_schema] Vec<u8>),
+    #[response(status = StatusCode::OK, content_type = "image/jpeg; charset=utf-8", headers(["content-disposition: attachment; filename=\"qrcode.jpeg\""]))]
+    QrCodeJpeg(#[to_schema] Vec<u8>),
+    #[response(status = StatusCode::OK, content_type = "image/webp; charset=utf-8", headers(["Content-Disposition: attachment; filename=\"qrcode.webp\""]))]
+    QrCodeWebp(#[to_schema] Vec<u8>),
+}
+
+impl From<sea_orm::DbErr> for QrCodeResponse {
+    fn from(value: sea_orm::DbErr) -> Self {
+        Self::DatabaseError(value.to_string().into())
+    }
+}
+
+impl From<qrcode::types::QrError> for QrCodeResponse {
+    fn from(value: qrcode::types::QrError) -> Self {
+        Self::EncodingError(value.to_string().into())
+    }
+}
+
+impl From<image::error::ImageError> for QrCodeResponse {
+    fn from(value: image::error::ImageError) -> Self {
+        Self::EncodingError(value.to_string().into())
+    }
+}
+
+fn image_response(img: Vec<u8>, content_type: &str) -> Response {
+    match Response::builder()
+        .status(StatusCode::OK)
+        .header(
+            header::CONTENT_TYPE,
+            format!("image/{}; charset=utf-8", content_type),
+        )
+        .header(
+            header::CONTENT_DISPOSITION,
+            format!("attachment; filename=\"qrcode.{}\"", content_type),
+        )
+        .body(Body::from(Cow::<'static, [u8]>::Owned(img)))
+    {
+        Ok(res) => res,
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(BasicError {
+                error: e.to_string(),
+            }),
+        )
+            .into_response(),
+    }
+}
+
+impl IntoResponse for QrCodeResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::UrlNotFound => (
+                StatusCode::NOT_FOUND,
+                Json(BasicError {
+                    error: "URL not found".to_string(),
+                }),
+            )
+                .into_response(),
+            Self::EncodingError(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response(),
+            Self::DatabaseError(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response(),
+            Self::UrlParseError(e) => (StatusCode::BAD_REQUEST, Json(e)).into_response(),
+            Self::IncorrectParams(e) => (StatusCode::BAD_REQUEST, Json(e)).into_response(),
+            Self::QrCodePng(png) => image_response(png, "png"),
+            Self::QrCodeJpeg(jpeg) => image_response(jpeg, "jpeg"),
+            Self::QrCodeWebp(webp) => image_response(webp, "webp"),
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
 #[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
