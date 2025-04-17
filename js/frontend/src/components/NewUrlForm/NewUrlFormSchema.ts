@@ -12,7 +12,7 @@ export const newUrlFormSchema = z.object({
     .url({
       message: "Please enter a valid URL",
     }),
-  miniUrl: z.optional(
+  short: z.optional(
     z
       .string({
         invalid_type_error: "Must be a valid url string",

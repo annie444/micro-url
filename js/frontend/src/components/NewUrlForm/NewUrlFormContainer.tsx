@@ -14,21 +14,19 @@ export function NewUrlFormContainer() {
     resolver: zodResolver(newUrlFormSchema),
     defaultValues: {
       url: "",
-      miniUrl: undefined,
+      short: undefined,
     },
     mode: "onSubmit",
   });
 
   const onSubmit: SubmitHandler<NewUrlFormSchema> = (values) => {
-    const { url, miniUrl } = values;
-    const response: NewUrlRequest = {
+    const { url, short } = values;
+    const requestParams: NewUrlRequest = {
       url: url,
+      short: short,
     };
-    if (miniUrl && miniUrl !== undefined) {
-      response.short = miniUrl;
-    }
     ToastHelper.notifyWithPromise({
-      response: urls.newUrl(response),
+      response: urls.newUrl(requestParams),
       successMessage: "URL shortened successfully!",
       errorMessage: "Error shortening URL",
       successDescription: (res: ShortLink) =>
