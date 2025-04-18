@@ -7,7 +7,7 @@ edition = "2024"
 [dependencies]
 tokio.workspace = true
 server = { path = "../../apps/server" }
-clap = { version = "4.5.34", features = [
+clap = { version = "4.5.36", features = [
   "unicode",
   "string",
   "env",
