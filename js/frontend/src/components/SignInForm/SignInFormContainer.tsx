@@ -18,15 +18,18 @@ export function SignInFormContainer() {
   const onSubmit: SubmitHandler<SignInFormSchema> = async ({
     email,
     password,
+    shouldRemember,
   }) => {
     await ToastHelper.notifyWithPromise({
       response: user.loginLocal({ email, password }),
       successMessage: "Logged in successfully!",
       errorMessage: "Error logging in",
     }).then(async (response) => {
-      const user = await response.unwrap();
+      if (shouldRemember) {
+        const user = await response.unwrap();
 
-      LocalStorageHelper.setItem("token", user.user_id);
+        LocalStorageHelper.setItem("token", user.user_id);
+      }
     });
   };
 
