@@ -18,7 +18,7 @@ import { Toaster } from "@/components/ui/sonner";
     <title>{content.title}</title>
   </head>
   <body class="flex h-screen flex-col">
-    <Header />
+    <Header client:load />
     <main
       class={cn(
         "container relative mx-auto",
