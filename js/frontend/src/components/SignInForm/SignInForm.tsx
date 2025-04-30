@@ -21,12 +21,6 @@ export function SignInForm({ handleSubmit }: SignInFormProps) {
 
   return (
     <Form onSubmit={handleSubmit} className="text-center">
-      <div className="mb-4">
-        <h1 className="text-center text-2xl font-bold">MicroURL</h1>
-        <p className="text-center text-sm text-gray-500">
-          Welcome to MicroURL!
-        </p>
-      </div>
       <FormField
         {...register("email")}
         render={({ field }) => (

@@ -1,11 +1,26 @@
 ---
-import Layout from '@/layouts/Layout.astro';
+import Layout from "@/layouts/Layout.astro";
 // Component Imports
-import { SignInFormContainer } from '@/components/SignInForm';
+import { SignInFormContainer } from "@/components/SignInForm";
+import { cn } from "@/lib/utils";
 ---
 
 <Layout content={{ title: "MicroUrl: Sign In" }}>
-	<div class="w-full max-w-80 mx-auto">
-		<SignInFormContainer client:load />
-	</div>
+  <div
+    class={cn("mx-auto w-full max-w-3xl", "flex flex-col gap-8", "text-center")}
+  >
+    <div class="flex flex-col gap-2">
+      <h2 class="text-center text-2xl font-bold">MicroURL</h2>
+      <p class="text-center text-sm text-gray-500">Welcome to MicroURL!</p>
+      <p>
+        MicroUrl is a simple, self-hosted URL shortener. Your data stays with
+        you — no companies collecting it, no weird tracking. Since it's open
+        source, you can see exactly what it's doing. You can even hook it up to
+        any domain you like, so your links look just how you want them.
+      </p>
+    </div>
+    <div class={cn("mx-auto w-full max-w-80")}>
+      <SignInFormContainer client:load />
+    </div>
+  </div>
 </Layout>
