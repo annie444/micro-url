@@ -19,11 +19,10 @@ export function NewUrlFormContainer() {
     mode: "onSubmit",
   });
 
-  const onSubmit: SubmitHandler<NewUrlFormSchema> = (values) => {
-    const { url, short } = values;
+  const onSubmit: SubmitHandler<NewUrlFormSchema> = ({ url, short }) => {
     const requestParams: NewUrlRequest = {
-      url: url,
-      short: short,
+      url,
+      short,
     };
     ToastHelper.notifyWithPromise({
       response: urls.newUrl(requestParams),
