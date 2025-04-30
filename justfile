@@ -3,9 +3,12 @@ set dotenv-load := true
 set dotenv-required := false
 set export := true
 
-kanidm_admin_password := "1B0MN71XrDsN7Y4M2ATgKyFCvaXJW2ZcLpLxQP4qG6bTrdyJ"
-kanidm_idm_admin_password := "0D6aHBMxWN6JdZRQ78JFqVjPk4GDC20EK6Wf8cPByahQZvcS"
+[private]
+default:
+  just --list
 
+[doc("Install ALL project dependencies (only needs to be run once)")]
+[group("dev")]
 install:
   #!/usr/bin/env bash
   # Install rust
@@ -19,15 +22,11 @@ install:
   fi
   # Install sea-orm-cli
   if ! command -v sea-orm-cli &> /dev/null; then
-    cargo install sea-orm-cli
+    cargo install sea-orm-cli -F async-std,cli,codegen,sea-orm-codegen,postgres-vector,runtime-tokio-native-tls
   fi
   # Install shuttle
   if ! command -v shuttle &> /dev/null; then
     cargo install shuttle
-  fi
-  # Install kanidm
-  if ! command -v kanidm &> /dev/null; then
-    cargo install kanidm_tools
   fi
   # Install git-cliff
   if ! command -v cog &> /dev/null; then
@@ -60,19 +59,37 @@ install:
     >&2 echo "You do not need to re-run this script after installing a container runtime."
   fi
 
+[doc("Runs the NX build sequence")]
+[group("nx")]
 build:
   pnpm exec nx run-many --target=build
 
+[doc("Runs the NX lint sequence")]
+[group("nx")]
 lint:
   pnpm exec nx run-many --target=lint
 
+[doc("Runs the NX test sequence")]
+[group("nx")]
 test:
   pnpm exec nx run-many --target=test
 
+[doc("Alias for `pnpm exec nx'")]
+[group("nx")]
 nx *args:
   pnpm exec nx {{args}}
 
-run $RUST_LOG="trace": kanidm-up build
+[doc("formats all files")]
+[group("dev")]
+format:
+  pnpm exec eslint . --fix 
+  pnpm exec prettier --write .
+  cargo clippy --fix
+  cargo fmt --all
+
+[doc("Runs the project in dev mode (`no hot-reloading`)")]
+[group("dev")]
+run $RUST_LOG="trace": clean-shuttle oidc-up (nx "run frontend:build")
   #!/usr/bin/env bash
   set -eo pipefail
   if [ ! -f ./Secrets.toml ]; then
@@ -80,6 +97,12 @@ run $RUST_LOG="trace": kanidm-up build
   fi
   shuttle run
 
+[doc("Removes the stale shuttle instance")]
+[group("dev")]
+clean-shuttle: (_container-down "shuttle_micro-url_shared_postgres")
+
+[doc("Reruns the entity generators (NOTE: you'll need to fix the `#[ts(rename=...)]` decorators manually)")]
+[group("db")]
 reset-db:
   just dev-db-stop
   just dev-db
@@ -87,72 +110,132 @@ reset-db:
   just generate
   just dev-db-stop
 
-kanidm-login:
-  kanidm login --username idm_admin --password "{{kanidm_idm_admin_password}}"
-
-kanidm *args:
-  kanidm {{args}}
-
-kanidm-up:
+_container-up name *cmd:
   #!/usr/bin/env bash
-  set -eo pipefail
+  set -exo pipefail
+  declare -a container
+  container=("--detach" "--name" "{{name}}" {{cmd}})
   if command -v podman &> /dev/null; then
-    if ! podman container exists kanidm &> /dev/null; then
-      podman run --detach \
-        --name kanidm \
-        --publish 8443:8443 \
-        --volume ./kanidm:/data:rw \
-        docker.io/kanidm/server:latest
+    if ! podman container exists "{{name}}" &> /dev/null; then
+      podman run "${container[@]}" 
     fi
   elif command -v docker &> /dev/null; then
-    if ! docker container exists kanidm &> /dev/null; then
-      docker run --detach \
-        --name kanidm \
-        --publish 8443:8443 \
-        --volume ./kanidm:/data:rw \
-        docker.io/kanidm/server:latest
+    if ! docker container exists "{{name}}" &> /dev/null; then
+      docker run "${container[@]}"
     fi
   else
     >&2 echo "Unable to find either docker or podman"
   fi
 
-kanidm-down:
+_container-down name:
   #!/usr/bin/env bash
-  set -eo pipefail
+  set -exo pipefail
   if command -v podman &> /dev/null; then
-    if podman container exists kanidm &> /dev/null; then
-      podman stop kanidm
-      podman rm kanidm
+    if podman container exists "{{name}}" &> /dev/null; then
+      podman stop "{{name}}"
+      podman rm "{{name}}"
     fi
   elif command -v docker &> /dev/null; then
-    if docker container exists kanidm &> /dev/null; then
-      docker stop kanidm
-      docker rm kanidm
+    if docker container exists "{{name}}" &> /dev/null; then
+      docker stop "{{name}}"
+      docker rm "{{name}}"
     fi
   else
     >&2 echo "Unable to find either docker or podman"
   fi
 
+[doc("Runs a mock OIDC server in a container (named `oidc`)")]
+[group("oidc")]
+oidc-up:
+  just _container-up "oidc" "--publish" "4011:8080" \
+    "--env" "ASPNETCORE_ENVIRONMENT=Development" \
+    "--env" "SERVER_OPTIONS_INLINE='{ \
+      \"AccessTokenJwtType\": \"JWT\", \
+      \"Discovery\": { \
+        \"ShowKeySet\": true \
+      }, \
+      \"Authentication\": { \
+        \"CookieSameSiteMode\": \"Lax\", \
+        \"CheckSessionCookieSameSiteMode\": \"Lax\" \
+      } \
+    }'" \
+    "--env" "LOGIN_OPTIONS_INLINE='{ \"AllowRememberLogin\": false }'" \
+    "--env" "LOGOUT_OPTIONS_INLINE='{ \"AutomaticRedirectAfterSignOut\": true }'" \
+    "--env" "CLIENTS_CONFIGURATION_INLINE='[ \
+      { \
+        \"ClientId\": \"micro-url-mock\", \
+        \"ClientSecrets\": [\"micro-url-mock-secret\"], \
+        \"Description\": \"Client for authorization code flow\", \
+        \"AllowedGrantTypes\": [\"authorization_code\"], \
+        \"RequirePkce\": true, \
+        \"AllowAccessTokensViaBrowser\": true, \
+        \"RedirectUris\": [\"http://localhost:8000/api/user/oidc/callback\"], \
+        \"AllowedScopes\": [\"openid\", \"profile\", \"email\"], \
+        \"IdentityTokenLifetime\": 3600, \
+        \"AccessTokenLifetime\": 3600, \
+        \"RequireClientSecret\": false \
+      } \
+    ]'" \
+    "--env" "USERS_CONFIGURATION_INLINE='[ \
+      { \
+        \"SubjectId\": \"1\", \
+        \"Username\": \"User1\", \
+        \"Password\": \"password\", \
+        \"Claims\": [ \
+          { \
+            \"Type\": \"name\", \
+            \"Value\": \"Test User1\", \
+            \"ValueType\": \"string\" \
+          }, \
+          { \
+            \"Type\": \"email\", \
+            \"Value\": \"testuser1@example.com\", \
+            \"ValueType\": \"string\" \
+          }, \
+        ] \
+      } \
+    ]'" \
+    "--env" "ASPNET_SERVICES_OPTIONS_INLINE='{ \
+      \"ForwardedHeadersOptions\": { \
+        \"ForwardedHeaders\": \"All\" \
+      } \
+    }'" \
+    "ghcr.io/soluto/oidc-server-mock:0.9.2"
+
+[doc("Stops and removes the mock OIDC server")]
+[group("oidc")]
+oidc-down: (_container-down "oidc")
+
+[doc("Runs any pending database migrations")]
+[group("db")]
 migrate-up:
   sea-orm-cli migrate up \
     --migration-dir ./libs/migration/ \
     --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
+[doc("Rollsback all database migrations")]
+[group("db")]
 migrate-down:
   sea-orm-cli migrate down \
     --migration-dir ./libs/migration/ \
     --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
+[doc("Resets all database migrations")]
+[group("db")]
 migrate-reset:
   sea-orm-cli migrate fresh \
     --migration-dir ./libs/migration/ \
     --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
+[doc("Checks for any pending database migrations")]
+[group("db")]
 migrate-status:
   sea-orm-cli migrate status \
     --migration-dir ./libs/migration/ \
     --database-url "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
+[doc("Generates the SeaORM entities (`libs/entity`) from the database schema")]
+[group("db")]
 generate:
   rm -rf entity/src
   sea-orm-cli generate entity \
@@ -171,6 +254,8 @@ generate:
     --enum-extra-attributes "ts(export)" \
     --enum-extra-attributes 'ts(export_to = "../../../js/frontend/src/lib/types/")' \
 
+[doc("Runs a development database in a container (named `dev-db`)")]
+[group("db")]
 dev-db:
   #!/usr/bin/env bash
   set -eo pipefail
@@ -188,43 +273,13 @@ dev-db:
   echo 'DB_HOST="'${DB_HOST}'"' >> .env
   echo 'DB_PORT="'${DB_PORT}'"' >> .env
   echo 'DB_NAME="'${DB_NAME}'"' >> .env
-  if command -v podman &> /dev/null; then
-    if ! podman container exists dev-db &> /dev/null; then
-      podman run --detach \
-        --name dev-db \
-        --publish 5432:5432 \
-        --env POSTGRES_USER=${DB_USER} \
-        --env POSTGRES_PASSWORD=${DB_PASS} \
-        --env POSTGRES_DB=${DB_NAME} \
-        docker.io/library/postgres:latest
-    fi
-  elif command -v docker &> /dev/null; then
-    if ! docker container exists dev-db &> /dev/null; then
-      docker run --detach \
-        --name dev-db \
-        --publish 5432:5432 \
-        --env POSTGRES_USER=${DB_USER} \
-        --env POSTGRES_PASSWORD=${DB_PASS} \
-        --env POSTGRES_DB=${DB_NAME} \
-        docker.io/library/postgres:latest
-    fi
-  else
-    >&2 echo "Unable to find either docker or podman"
-  fi
+  just _container-up "dev-db" \
+    "--publish" "5432:5432" \
+    "--env" "POSTGRES_USER=${DB_USER}" \
+    "--env" "POSTGRES_PASSWORD=${DB_PASS}" \
+    "--env" "POSTGRES_DB=${DB_NAME}" \
+    "docker.io/library/postgres:latest"
 
-dev-db-stop:
-  #!/usr/bin/env bash
-  set -eo pipefail
-  if command -v podman &> /dev/null; then
-    if podman container exists dev-db &> /dev/null; then
-      podman stop dev-db
-      podman rm dev-db
-    fi
-  elif command -v docker &> /dev/null; then
-    if docker container exists dev-db &> /dev/null; then
-      docker stop dev-db
-      docker rm dev-db
-    fi
-  else
-    >&2 echo "Unable to find either docker or podman"
-  fi
+[doc("Stops the development database container")]
+[group("db")]
+dev-db-stop: (_container-down "dev-db")

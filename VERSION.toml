@@ -1,5 +1,8 @@
 version = "0.1.0"
-files = []
+
+[[files]]
+file = "package.json"
+expr = '"version": "(.*)"'
 
 [package.entity]
 version = "0.1.0"

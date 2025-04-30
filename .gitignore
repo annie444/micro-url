@@ -62,10 +62,6 @@ playwright/.cache/
 .DS_Store
 Thumbs.db
 
-/kanidm/kanidm.db*
-!/kanidm/kanidm.db
-!/kanidm/kanidm.db.klock
-
 .nx/cache
 .nx/workspace-data
 /target

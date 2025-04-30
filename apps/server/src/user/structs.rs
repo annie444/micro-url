@@ -1,4 +1,4 @@
-use std::num::TryFromIntError;
+use std::{collections::BTreeMap, fmt::Display, num::TryFromIntError};
 
 use axum::{
     Json,
@@ -6,23 +6,42 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::cookie::PrivateCookieJar;
-use entity::{short_link, user};
+use chrono::NaiveDateTime;
+use entity::{short_link, user, views};
 use openidconnect::{
     ClaimsVerificationError, ConfigurationError, HttpClientError, RequestTokenError,
     SignatureVerificationError, SigningError, StandardErrorResponse, UserInfoError,
     core::CoreErrorResponseType,
 };
-use sea_orm::{DerivePartialModel, FromQueryResult};
+use sea_orm::FromQueryResult;
 use serde::{Deserialize, Serialize};
+use tracing::{error, info, instrument, warn};
 use ts_rs::TS;
 use utoipa::{IntoParams, IntoResponses, ToSchema};
+use uuid::Uuid;
 
-use crate::structs::{BasicError, BasicResponse};
+#[cfg(feature = "headers")]
+use crate::utils::HeaderMapDef;
+use crate::utils::{BasicError, BasicResponse};
+
+#[derive(Debug, Clone, Serialize, Deserialize, IntoParams, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[into_params(parameter_in = Query, style = Form)]
+pub struct Paginate {
+    pub page: u64,
+    pub size: u64,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
 #[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
 pub struct OidcName {
     pub name: String,
+}
+
+impl Display for OidcName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
@@ -34,9 +53,13 @@ pub enum OidcNameResponse {
 }
 
 impl IntoResponse for OidcNameResponse {
+    #[instrument]
     fn into_response(self) -> Response {
         match self {
-            OidcNameResponse::OidcName(name) => (StatusCode::OK, Json(name)).into_response(),
+            OidcNameResponse::OidcName(name) => {
+                info!(%name);
+                (StatusCode::OK, Json(name)).into_response()
+            }
         }
     }
 }
@@ -65,16 +88,23 @@ pub enum NewUserResponse {
 }
 
 impl IntoResponse for NewUserResponse {
+    #[instrument]
     fn into_response(self) -> Response {
         match self {
-            NewUserResponse::UserCreated(model) => (StatusCode::OK, Json(model)).into_response(),
+            NewUserResponse::UserCreated(model) => {
+                info!("{:?}", model);
+                (StatusCode::OK, Json(model)).into_response()
+            }
             NewUserResponse::UserAlreadyExists(e) => {
+                error!(%e);
                 (StatusCode::BAD_REQUEST, Json(e)).into_response()
             }
             NewUserResponse::DatabaseError(e) => {
+                error!(%e);
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
             NewUserResponse::PasswordHashError(e) => {
+                error!(%e);
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
         }
@@ -125,18 +155,23 @@ pub enum LoginResponse {
 }
 
 impl IntoResponse for LoginResponse {
+    #[instrument]
     fn into_response(self) -> Response {
         match self {
             LoginResponse::UserLoggedIn(model, jar) => {
+                info!("{:?}", model);
                 (StatusCode::OK, jar, Json(model)).into_response()
             }
             LoginResponse::InvalidCredentials(e) => {
+                error!(%e);
                 (StatusCode::BAD_REQUEST, Json(e)).into_response()
             }
             LoginResponse::DatabaseError(e) => {
+                error!(%e);
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
             LoginResponse::InternalServerError(e) => {
+                error!(%e);
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
         }
@@ -182,17 +217,27 @@ pub enum LogoutResponse {
 }
 
 impl IntoResponse for LogoutResponse {
+    #[instrument]
     fn into_response(self) -> Response {
         match self {
             LogoutResponse::UserLoggedOut(session_id, jar) => {
+                info!("{:?}", session_id);
                 (StatusCode::OK, jar, Json(session_id)).into_response()
             }
-            LogoutResponse::InvalidSession(e) => (StatusCode::BAD_REQUEST, Json(e)).into_response(),
+            LogoutResponse::InvalidSession(e) => {
+                error!(%e);
+                (StatusCode::BAD_REQUEST, Json(e)).into_response()
+            }
             LogoutResponse::DatabaseError(e) => {
+                error!(%e);
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
-            LogoutResponse::UserNotLoggedIn(e) => (StatusCode::OK, Json(e)).into_response(),
+            LogoutResponse::UserNotLoggedIn(e) => {
+                warn!("{:?}", e);
+                (StatusCode::OK, Json(e)).into_response()
+            }
             LogoutResponse::SessionNotFound(e) => {
+                error!(%e);
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
         }
@@ -205,16 +250,6 @@ impl From<sea_orm::DbErr> for LogoutResponse {
     }
 }
 
-#[derive(
-    Debug, Clone, Serialize, Deserialize, ToSchema, DerivePartialModel, FromQueryResult, TS,
-)]
-#[sea_orm(entity = "user::Entity")]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
-pub struct UserProfile {
-    pub name: String,
-    pub email: String,
-}
-
 #[derive(Debug, Clone, IntoResponses, Serialize, Deserialize, TS)]
 #[serde(untagged)]
 #[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
@@ -224,7 +259,7 @@ pub enum UserProfileResponse {
     #[response(status = StatusCode::UNAUTHORIZED)]
     DatabaseError(#[to_schema] BasicError),
     #[response(status = StatusCode::OK)]
-    UserProfile(#[to_schema] UserProfile),
+    UserProfile(#[to_schema] user::Model),
 }
 
 impl From<sea_orm::DbErr> for UserProfileResponse {
@@ -234,15 +269,19 @@ impl From<sea_orm::DbErr> for UserProfileResponse {
 }
 
 impl IntoResponse for UserProfileResponse {
+    #[instrument]
     fn into_response(self) -> Response {
         match self {
             UserProfileResponse::UserProfile(profile) => {
+                info!("{:?}", profile);
                 (StatusCode::OK, Json(profile)).into_response()
             }
             UserProfileResponse::InvalidSession(e) => {
+                error!(%e);
                 (StatusCode::UNAUTHORIZED, Json(e)).into_response()
             }
             UserProfileResponse::DatabaseError(e) => {
+                error!(%e);
                 (StatusCode::UNAUTHORIZED, Json(e)).into_response()
             }
         }
@@ -251,8 +290,105 @@ impl IntoResponse for UserProfileResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
 #[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
-pub struct UserLinks {
-    pub urls: Vec<short_link::Model>,
+pub struct UserLinksAndViews {
+    pub urls: Vec<UserLinkWithViews>,
+}
+
+impl From<Vec<(short_link::Model, Vec<views::Model>)>> for UserLinksAndViews {
+    fn from(models: Vec<(short_link::Model, Vec<views::Model>)>) -> Self {
+        Self {
+            urls: models
+                .iter()
+                .map(|v| v.to_owned().into())
+                .collect::<Vec<UserLinkWithViews>>(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+pub struct UserLinkWithViews {
+    pub id: String,
+    pub short_url: String,
+    pub original_url: String,
+    pub user_id: Uuid,
+    #[ts(optional)]
+    pub expiry_date: Option<NaiveDateTime>,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+    pub views: Vec<UserView>,
+}
+
+impl From<(short_link::Model, Vec<views::Model>)> for UserLinkWithViews {
+    fn from(values: (short_link::Model, Vec<views::Model>)) -> Self {
+        let (sl, vi) = values;
+        Self {
+            id: sl.id,
+            short_url: sl.short_url,
+            original_url: sl.original_url,
+            user_id: sl.user_id.unwrap(),
+            expiry_date: sl.expiry_date,
+            created_at: sl.created_at,
+            updated_at: sl.updated_at,
+            views: vi
+                .iter()
+                .map(|v| v.to_owned().into())
+                .collect::<Vec<UserView>>(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+pub struct UserView {
+    pub id: i32,
+    #[ts(optional)]
+    pub headers: Option<BTreeMap<String, Vec<String>>>,
+    #[ts(optional)]
+    pub ip: Option<String>,
+    pub cache_hit: bool,
+    pub created_at: NaiveDateTime,
+}
+
+#[cfg(feature = "headers")]
+impl From<views::Model> for UserView {
+    fn from(vi: views::Model) -> Self {
+        let headers: Option<HeaderMapDef> = vi.headers.map(|val| val.into());
+        Self {
+            id: vi.id,
+            headers: headers.map(|v| v.0),
+            ip: vi.ip.map(|ip| ip.ip().to_string()),
+            cache_hit: vi.cache_hit,
+            created_at: vi.created_at,
+        }
+    }
+}
+
+#[cfg(not(feature = "headers"))]
+impl From<views::Model> for UserView {
+    fn from(vi: views::Model) -> Self {
+        Self {
+            id: vi.id,
+            headers: None,
+            ip: vi.ip.map(|ip| ip.ip().to_string()),
+            cache_hit: vi.cache_hit,
+            created_at: vi.created_at,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromQueryResult, ToSchema, TS)]
+#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+pub struct UserLink {
+    pub id: String,
+    pub short_url: String,
+    pub original_url: String,
+    pub user_id: Uuid,
+    #[ts(optional)]
+    pub expiry_date: Option<NaiveDateTime>,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+    pub views: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
@@ -264,7 +400,9 @@ pub enum UserLinksResponse {
     #[response(status = StatusCode::UNAUTHORIZED)]
     DatabaseError(#[to_schema] BasicError),
     #[response(status = StatusCode::OK)]
-    UserLinks(#[to_schema] UserLinks),
+    UserLinksAndViews(#[to_schema] UserLinksAndViews),
+    #[response(status = StatusCode::OK)]
+    UserLinks(#[to_schema] Vec<UserLink>),
 }
 
 impl From<sea_orm::DbErr> for UserLinksResponse {
@@ -273,15 +411,31 @@ impl From<sea_orm::DbErr> for UserLinksResponse {
     }
 }
 
+impl From<sea_orm::TransactionError<sea_orm::DbErr>> for UserLinksResponse {
+    fn from(value: sea_orm::TransactionError<sea_orm::DbErr>) -> Self {
+        Self::DatabaseError(format!("Error commit database transaction: {}", value).into())
+    }
+}
+
 impl IntoResponse for UserLinksResponse {
+    #[instrument]
     fn into_response(self) -> Response {
         match self {
-            UserLinksResponse::UserLinks(links) => (StatusCode::OK, Json(links)).into_response(),
+            UserLinksResponse::UserLinksAndViews(links) => {
+                info!("{:?}", links);
+                (StatusCode::OK, Json(links)).into_response()
+            }
             UserLinksResponse::InvalidSession(e) => {
+                error!(%e);
                 (StatusCode::UNAUTHORIZED, Json(e)).into_response()
             }
             UserLinksResponse::DatabaseError(e) => {
+                error!(%e);
                 (StatusCode::UNAUTHORIZED, Json(e)).into_response()
+            }
+            Self::UserLinks(links) => {
+                info!("{:?}", links);
+                (StatusCode::OK, Json(links)).into_response()
             }
         }
     }
@@ -300,7 +454,7 @@ pub enum OidcCallbackResponseType {
     IntegerParseError(BasicError),
     OptionError(BasicError),
     DatabaseError(BasicError),
-    OidcCallback(BasicResponse),
+    OidcCallback(String),
     CookieNotFound(BasicError),
     TokenError(BasicError),
     InternalError(BasicError),
@@ -327,7 +481,7 @@ pub enum OidcCallbackResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),
     #[response(status = StatusCode::OK)]
-    OidcCallback(#[to_schema] BasicResponse, PrivateCookieJar),
+    OidcCallback(#[to_schema] String, PrivateCookieJar),
     #[response(status = StatusCode::UNAUTHORIZED)]
     CookieNotFound(#[to_schema] BasicError),
     #[response(status = StatusCode::BAD_REQUEST)]
@@ -337,45 +491,59 @@ pub enum OidcCallbackResponse {
 }
 
 impl IntoResponse for OidcCallbackResponse {
+    #[instrument]
     fn into_response(self) -> Response {
         match self {
             OidcCallbackResponse::OidcCallback(response, jar) => {
-                (StatusCode::OK, jar, Json(response)).into_response()
+                info!(response);
+                (jar, Redirect::temporary(&response)).into_response()
             }
             OidcCallbackResponse::InvalidCsrfToken(e) => {
+                error!(%e);
                 (StatusCode::BAD_REQUEST, Json(e)).into_response()
             }
             OidcCallbackResponse::OptionError(e) => {
+                error!(%e);
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
             OidcCallbackResponse::DatabaseError(e) => {
+                error!(%e);
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
             OidcCallbackResponse::InvalidClaims(e) => {
+                error!(%e);
                 (StatusCode::BAD_REQUEST, Json(e)).into_response()
             }
             OidcCallbackResponse::InvalidOidcConfig(e) => {
+                error!(%e);
                 (StatusCode::BAD_REQUEST, Json(e)).into_response()
             }
             OidcCallbackResponse::InvalidSignature(e) => {
+                error!(%e);
                 (StatusCode::BAD_REQUEST, Json(e)).into_response()
             }
             OidcCallbackResponse::UserInfoError(e) => {
+                error!(%e);
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
             OidcCallbackResponse::SignatureError(e) => {
+                error!(%e);
                 (StatusCode::BAD_REQUEST, Json(e)).into_response()
             }
             OidcCallbackResponse::IntegerParseError(e) => {
+                error!(%e);
                 (StatusCode::BAD_REQUEST, Json(e)).into_response()
             }
             OidcCallbackResponse::CookieNotFound(e) => {
+                error!(%e);
                 (StatusCode::UNAUTHORIZED, Json(e)).into_response()
             }
             OidcCallbackResponse::TokenError(e) => {
+                error!(%e);
                 (StatusCode::BAD_REQUEST, Json(e)).into_response()
             }
             OidcCallbackResponse::InternalError(e) => {
+                error!(%e);
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
         }
@@ -455,9 +623,11 @@ pub enum OidcLoginResponse {
 }
 
 impl IntoResponse for OidcLoginResponse {
+    #[instrument]
     fn into_response(self) -> Response {
         match self {
             OidcLoginResponse::OidcLogin(url, jar) => {
+                info!(url);
                 (StatusCode::TEMPORARY_REDIRECT, jar, Redirect::to(&url)).into_response()
             }
         }

@@ -6,6 +6,12 @@ use thiserror::Error;
 use tracing::{error, warn};
 
 #[derive(Error, Debug)]
+#[error("Unable to lock the Arc: {error}")]
+pub struct ArcMutexError {
+    pub error: String,
+}
+
+#[derive(Error, Debug)]
 pub enum ServerError {
     #[error("SQL error: {0}")]
     DbError(#[from] sea_orm::error::DbErr),
@@ -53,6 +59,12 @@ pub enum ServerError {
     PasswordError(#[from] argon2::Error),
     #[error("Error hashing password: {0}")]
     PasswordHashError(#[from] argon2::password_hash::Error),
+    #[error("Error decoding header value: {0}")]
+    HeaderError(#[from] axum::http::header::ToStrError),
+    #[error("Error coercing string into integer: {0}")]
+    ParseIntError(#[from] std::num::ParseIntError),
+    #[error("Mutation error: {0}")]
+    ArcMutexError(#[from] ArcMutexError),
 }
 
 impl IntoResponse for ServerError {
@@ -138,6 +150,18 @@ impl IntoResponse for ServerError {
             }
             Self::PasswordHashError(e) => {
                 error!("Password hash error: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+            }
+            Self::HeaderError(e) => {
+                error!("Ascii decoding error: {}", e.to_string());
+                (StatusCode::BAD_REQUEST, e.to_string())
+            }
+            Self::ParseIntError(e) => {
+                error!("Unable to coerce string into integer: {}", e.to_string());
+                (StatusCode::BAD_REQUEST, e.to_string())
+            }
+            Self::ArcMutexError(e) => {
+                error!("Mutation error: {}", e.to_string());
                 (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
             }
         };

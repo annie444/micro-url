@@ -1,4 +1,3 @@
-import axios, { type AxiosResponse } from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm, type SubmitHandler } from "react-hook-form";
 
@@ -7,48 +6,34 @@ import { newUrlFormSchema, type NewUrlFormSchema } from "./NewUrlFormSchema";
 import { NewUrlForm } from "./NewUrlForm";
 import { ToastHelper, LocalStorageHelper } from "@/helpers";
 import { useEffect } from "react";
-import type { ShortLink } from "@/lib/types/ShortLink";
+import { urls } from "@/lib/api";
+import type { NewUrlRequest, ShortLink } from "@/lib/types";
 
 export function NewUrlFormContainer() {
   const formMethods = useForm<NewUrlFormSchema>({
     resolver: zodResolver(newUrlFormSchema),
     defaultValues: {
       url: "",
-      miniUrl: undefined,
+      short: undefined,
     },
     mode: "onSubmit",
   });
 
-  const onSubmit: SubmitHandler<NewUrlFormSchema> = async ({
-    url,
-    miniUrl,
-  }) => {
-    const response = new Promise<AxiosResponse<ShortLink>>(
-      (resolve, reject) => {
-        axios
-          .post("/api/shorten", {
-            url,
-            short: miniUrl,
-          })
-          .then((res) => {
-            resolve(res);
-          })
-          .catch((err) => {
-            reject(err);
-          });
-      },
-    );
-    await ToastHelper.notifyWithPromise({
-      response,
+  const onSubmit: SubmitHandler<NewUrlFormSchema> = (values) => {
+    const { url, short } = values;
+    const requestParams: NewUrlRequest = {
+      url: url,
+      short: short,
+    };
+    ToastHelper.notifyWithPromise({
+      response: urls.newUrl(requestParams),
       successMessage: "URL shortened successfully!",
       errorMessage: "Error shortening URL",
-      successDescription: (res) =>
-        "Your shortened URL is: " + res.data.short_url,
-      successAction: (res) => {
+      successDescription: (res: ShortLink) =>
+        "Your shortened URL is: " + res.short_url,
+      successAction: (res: ShortLink) => {
         return (
-          <Button
-            onClick={() => navigator.clipboard.writeText(res.data.short_url)}
-          >
+          <Button onClick={() => navigator.clipboard.writeText(res.short_url)}>
             Copy
           </Button>
         );

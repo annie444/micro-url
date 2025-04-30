@@ -26,14 +26,21 @@ pub async fn add_local_user(
     State(state): State<ServerState>,
     Json(payload): Json<NewUserRequest>,
 ) -> Result<NewUserResponse, NewUserResponse> {
+    let txn = state.conn.begin().await?;
+
+    let mut user_id = Uuid::new_v4();
+    while user::Entity::find_by_id(user_id).one(&txn).await?.is_some() {
+        user_id = Uuid::new_v4();
+    }
+
     let new_user = user::ActiveModel {
-        user_id: ActiveValue::NotSet,
+        user_id: ActiveValue::Set(user_id),
         name: ActiveValue::set(payload.name),
         email: ActiveValue::set(payload.email),
         created_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
         updated_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
     };
-    let new = new_user.insert(&state.conn).await?;
+    let new = new_user.insert(&txn).await?;
 
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
@@ -46,7 +53,9 @@ pub async fn add_local_user(
         user_id: ActiveValue::set(new.user_id),
         password: ActiveValue::set(password_hash),
     };
-    new_user_pass.insert(&state.conn).await?;
+    new_user_pass.insert(&txn).await?;
+
+    txn.commit().await?;
 
     Ok(NewUserResponse::UserCreated(new))
 }
@@ -116,7 +125,7 @@ pub async fn local_login(
         ));
     };
 
-    let cookie = Cookie::build(("sid", session.session_id))
+    let id_cookie = Cookie::build(("sid", session.session_id))
         .domain(format!(".{}", domain))
         .path("/")
         .secure(true)
@@ -124,7 +133,7 @@ pub async fn local_login(
 
     Ok(LoginResponse::UserLoggedIn(
         user,
-        jar.add(cookie)
+        jar.add(id_cookie)
             .remove("verifier")
             .remove("nonce")
             .remove("csrf_token"),

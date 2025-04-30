@@ -15,5 +15,6 @@ pub fn url_router(state: ServerState) -> OpenApiRouter {
         .routes(routes!(routes::update_url))
         .routes(routes!(routes::url_info))
         .routes(routes!(routes::get_url))
+        .routes(routes!(routes::qr_code))
         .with_state(state)
 }

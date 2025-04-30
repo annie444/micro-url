@@ -10,9 +10,10 @@ use openidconnect::{
     OAuth2TokenResponse, PkceCodeChallenge, PkceCodeVerifier, TokenResponse, UserInfoClaims,
     core::{CoreAuthenticationFlow, CoreGenderClaim},
 };
-use sea_orm::entity::*;
+use sea_orm::{entity::*, query::*};
 use time::Duration as TimeDuration;
 use tracing::instrument;
+use uuid::Uuid;
 
 use super::structs::{
     AuthRequest, OidcCallbackResponse, OidcLoginResponse, OidcName, OidcNameResponse,
@@ -31,7 +32,7 @@ use crate::state::ServerState;
 )]
 pub async fn get_oidc_provider(State(state): State<ServerState>) -> OidcNameResponse {
     OidcNameResponse::OidcName(OidcName {
-        name: state.oidc_config.name.clone(),
+        name: state.config.oidc.name.clone(),
     })
 }
 
@@ -129,7 +130,7 @@ pub async fn oidc_callback(
 
     let token = token_response.access_token().secret().to_owned();
 
-    let cookie = Cookie::build(("sid", token.clone()))
+    let id_cookie = Cookie::build(("sid", token.clone()))
         .domain(format!(".{}", domain))
         .path("/")
         .secure(true)
@@ -154,15 +155,31 @@ pub async fn oidc_callback(
         ));
     };
 
-    let new_user = user::ActiveModel {
-        user_id: ActiveValue::NotSet,
-        name: ActiveValue::set(name.as_str().to_owned()),
-        email: ActiveValue::set(email.as_str().to_owned()),
-        created_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
-        updated_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
-    };
+    let txn = state.conn.begin().await?;
 
-    let user = new_user.insert(&state.conn).await?;
+    let user = match user::Entity::find()
+        .filter(user::Column::Email.eq(email.as_str()))
+        .one(&txn)
+        .await?
+    {
+        Some(user) => user,
+        None => {
+            let mut user_id = Uuid::new_v4();
+            while user::Entity::find_by_id(user_id).one(&txn).await?.is_some() {
+                user_id = Uuid::new_v4();
+            }
+
+            let new_user = user::ActiveModel {
+                user_id: ActiveValue::Set(user_id),
+                name: ActiveValue::set(name.as_str().to_owned()),
+                email: ActiveValue::set(email.as_str().to_owned()),
+                created_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
+                updated_at: ActiveValue::set(chrono::Utc::now().naive_utc()),
+            };
+
+            new_user.insert(&txn).await?
+        }
+    };
 
     let new_session = sessions::ActiveModel {
         id: ActiveValue::NotSet,
@@ -171,11 +188,13 @@ pub async fn oidc_callback(
         expiry: ActiveValue::set(max_age),
     };
 
-    new_session.insert(&state.conn).await?;
+    new_session.insert(&txn).await?;
+
+    txn.commit().await?;
 
     Ok(OidcCallbackResponse::OidcCallback(
-        "User logged in".to_string().into(),
-        jar.add(cookie)
+        "/ui".to_string(),
+        jar.add(id_cookie)
             .remove("verifier")
             .remove("nonce")
             .remove("csrf_token"),
@@ -205,26 +224,26 @@ pub async fn oidc_login(
             CsrfToken::new_random,
             Nonce::new_random,
         )
-        .add_scopes(state.oidc_config.scopes.clone())
+        .add_scopes(state.config.oidc.scopes.clone())
         .set_pkce_challenge(pkce_challenge)
         .url();
 
     let verifier_cookie = Cookie::build(("verifier", pkce_verifier.secret().to_owned()))
-        .secure(true)
+        .secure(!cfg!(debug_assertions))
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")
         .domain(format!(".{}", state.url.domain().unwrap()));
 
     let nonce_cookie = Cookie::build(("nonce", nonce.secret().to_owned()))
-        .secure(true)
+        .secure(!cfg!(debug_assertions))
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")
         .domain(format!(".{}", state.url.domain().unwrap()));
 
     let csrf_token_cookie = Cookie::build(("csrf_token", csrf_token.secret().to_owned()))
-        .secure(true)
+        .secure(!cfg!(debug_assertions))
         .http_only(true)
         .max_age(TimeDuration::seconds(300))
         .path("/")

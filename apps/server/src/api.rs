@@ -8,7 +8,7 @@ use utoipa::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::{state::ServerState, structs, urls, user};
+use crate::{state::ServerState, urls, user, utils};
 
 #[derive(Debug, Serialize)]
 pub struct SecurityDef;
@@ -36,12 +36,12 @@ impl Modify for SecurityDef {
             short_link::Model,
             user::structs::NewUserRequest,
             user::structs::LoginRequest,
-            user::structs::UserProfile,
-            user::structs::UserLinks,
+            user::structs::UserLink,
+            user::structs::UserLinksAndViews,
             user::structs::OidcName,
             urls::structs::NewUrlRequest,
-            structs::BasicError,
-            structs::BasicResponse
+            utils::BasicError,
+            utils::BasicResponse
         ),
     ),
     tags(
@@ -74,5 +74,5 @@ pub fn router(state: ServerState) -> Router {
         .merge(user::local_router(state.clone()))
         .split_for_parts();
 
-    router.merge(SwaggerUi::new("/swagger-ui").url("/apidoc/openapi.json", api))
+    router.merge(SwaggerUi::new("/api/ui/swagger").url("/api/doc/openapi.json", api))
 }
