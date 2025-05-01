@@ -22,8 +22,8 @@ export function SignInFormContainer() {
   }) => {
     await ToastHelper.notifyWithPromise({
       response: user.loginLocal({ email, password }),
-      successMessage: "Logged in successfully!",
-      errorMessage: "Error logging in",
+      successMessage: "Signed in successfully!",
+      errorMessage: "Error signing in",
     }).then(async (response) => {
       if (shouldRemember) {
         const user = await response.unwrap();

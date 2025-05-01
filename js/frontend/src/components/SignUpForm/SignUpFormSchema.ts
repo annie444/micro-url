@@ -4,11 +4,11 @@ import {
   passwordSchema,
 } from "../shared/SignInForm/sign_in_schema";
 
-export const signInFormSchema = z
+export const signUpFormSchema = z
   .object({
-    shouldRemember: z.boolean().optional(),
+    name: z.string().trim().min(1),
   })
   .merge(emailSchema)
   .merge(passwordSchema);
 
-export type SignInFormSchema = z.infer<typeof signInFormSchema>;
+export type SignUpFormSchema = z.infer<typeof signUpFormSchema>;
