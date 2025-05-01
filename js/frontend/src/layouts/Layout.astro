@@ -5,6 +5,7 @@ const { content } = Astro.props;
 import { cn } from "@/lib/utils";
 
 import { Footer } from "@/components/shared/Footer";
+import { Header } from "@/components/shared/Header";
 import { Toaster } from "@/components/ui/sonner";
 ---
 
@@ -16,11 +17,12 @@ import { Toaster } from "@/components/ui/sonner";
     <meta name="generator" content={Astro.generator} />
     <title>{content.title}</title>
   </head>
-  <body class="grid h-screen grid-rows-[1fr_auto]">
+  <body class="flex h-screen flex-col">
+    <Header client:load />
     <main
       class={cn(
-        "container mx-auto",
-        "w-full max-w-4xl",
+        "container relative mx-auto",
+        "w-full max-w-4xl h-full",
         "grid content-center",
         "p-4",
       )}

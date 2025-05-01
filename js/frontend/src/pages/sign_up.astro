@@ -1,11 +1,11 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 // Component Imports
-import { SignInFormContainer } from "@/components/SignInForm";
+import { SignUpFormContainer } from "@/components/SignUpForm";
 import { cn } from "@/lib/utils";
 ---
 
-<Layout content={{ title: "MicroUrl: Sign In" }}>
+<Layout content={{ title: "MicroUrl: Sign Up" }}>
   <div
     class={cn("mx-auto w-full max-w-3xl", "flex flex-col gap-8", "text-center")}
   >
@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
       </p>
     </div>
     <div class={cn("mx-auto w-full max-w-80")}>
-      <SignInFormContainer client:load />
+      <SignUpFormContainer client:load />
     </div>
   </div>
 </Layout>
