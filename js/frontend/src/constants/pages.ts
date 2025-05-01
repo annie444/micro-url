@@ -13,4 +13,9 @@ export const PAGES_CONFIG: PagesConfig = {
     href: `${BASE_PATH}/sign_in`,
     description: "Sign In",
   },
+  sign_up: {
+    title: "Sign Up",
+    href: `${BASE_PATH}/sign_up`,
+    description: "Sign Up",
+  },
 };

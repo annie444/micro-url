@@ -1,4 +1,4 @@
-type PagePath = "index" | "sign_in";
+type PagePath = "index" | "sign_in" | "sign_up";
 
 interface PageConfig {
   title: string;
