@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
 import { type NewUrlFormSchema } from "./NewUrlFormSchema";
+import { Form } from "@/components/shared/Form";
 
 interface NewUrlFormProps {
   handleSubmit(): void;
@@ -22,7 +23,7 @@ export function NewUrlForm({ handleSubmit }: NewUrlFormProps) {
   const { register } = useFormContext<NewUrlFormSchema>();
 
   return (
-    <form onSubmit={handleSubmit} className="w-full space-y-8">
+    <Form onSubmit={handleSubmit}>
       <FormField
         {...register("url")}
         render={({ field }) => (
@@ -54,6 +55,6 @@ export function NewUrlForm({ handleSubmit }: NewUrlFormProps) {
         )}
       />
       <Button type="submit">Submit</Button>
-    </form>
+    </Form>
   );
 }
