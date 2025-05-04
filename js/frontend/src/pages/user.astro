@@ -1,0 +1,51 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import type { User } from "@/lib/types";
+import UrlsTable from "@/components/User/UrlsTable.astro";
+const dummyUser: User = {
+  user_id: "123",
+  name: "Peggy Ehler",
+  email: "peggy@ehler.com",
+  created_at: "2021-01-01",
+  updated_at: "2021-01-01",
+};
+---
+
+<Layout content={{ title: "MicroUrl: User" }}>
+  <h2 class="mb-4 text-2xl font-bold">{dummyUser.name}</h2>
+  <UrlsTable
+    currentPage={1}
+    userLinks={[
+      {
+        id: "1",
+        short_url: "https://short.url",
+        original_url: "https://original.url",
+        user_id: "123",
+        expiry_date: "2021-01-01",
+        created_at: "2021-01-01",
+        updated_at: "2021-01-01",
+        views: 100,
+      },
+      {
+        id: "2",
+        short_url: "https://short.url",
+        original_url: "https://original.url",
+        user_id: "123",
+        expiry_date: "2021-01-01",
+        created_at: "2021-01-01",
+        updated_at: "2021-01-01",
+        views: 100,
+      },
+      {
+        id: "3",
+        short_url: "https://short.url",
+        original_url: "https://original.url",
+        user_id: "123",
+        expiry_date: "2021-01-01",
+        created_at: "2021-01-01",
+        updated_at: "2021-01-01",
+        views: 100,
+      },
+    ]}
+  />
+</Layout>

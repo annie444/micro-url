@@ -1,0 +1,79 @@
+---
+import type { UserLink } from "@/lib/types";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+  PaginationLink,
+} from "@/components/ui/pagination";
+import SafeLink from "@/components/shared/SafeLink.astro";
+
+interface UrlsTableProps {
+  userLinks: UserLink[];
+  currentPage: number;
+}
+
+const { userLinks, currentPage } = Astro.props as UrlsTableProps;
+---
+
+<div class="flex flex-col justify-end gap-2">
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead className="w-[100px]">ID</TableHead>
+        <TableHead>MicroUrl</TableHead>
+        <TableHead>Original</TableHead>
+        <TableHead className="text-right">Expiration Date</TableHead>
+        <TableHead className="text-right">Views</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {
+        userLinks.map(({ id, short_url, original_url, expiry_date, views }) => {
+          console.log(short_url);
+
+          return (
+            <TableRow>
+              <TableCell className="font-medium">{id}</TableCell>
+              <TableCell>
+                <SafeLink href={short_url}>{short_url}</SafeLink>
+              </TableCell>
+              <TableCell>
+                <SafeLink href={original_url}>{original_url}</SafeLink>
+              </TableCell>
+              <TableCell className="text-right">{expiry_date}</TableCell>
+              <TableCell className="text-right">{views}</TableCell>
+            </TableRow>
+          );
+        })
+      }
+    </TableBody>
+  </Table>
+  <Pagination className="justify-end">
+    <PaginationContent>
+      <PaginationItem>
+        <PaginationPrevious href="#" />
+      </PaginationItem>
+      <PaginationItem>
+        <PaginationLink href="#">{currentPage}</PaginationLink>
+      </PaginationItem>
+      <PaginationItem>
+        <PaginationEllipsis />
+      </PaginationItem>
+      <PaginationItem>
+        <PaginationNext href="#" />
+      </PaginationItem>
+    </PaginationContent>
+  </Pagination>
+</div>
