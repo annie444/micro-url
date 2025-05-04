@@ -1,0 +1,17 @@
+---
+interface SafeLinkProps {
+  href: string;
+  children: string;
+}
+
+const { href } = Astro.props as SafeLinkProps;
+---
+
+<a
+  href={href}
+  target="_blank"
+  rel="noopener noreferrer"
+  class="hover:text-blue-700 hover:underline"
+>
+  <slot />
+</a>
