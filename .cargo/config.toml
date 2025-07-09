@@ -1,2 +1,3 @@
 [build]
 target-dir = 'dist/target'
+rustflags = ["-Zthreads=10", "-Ctarget-cpu=native"]
