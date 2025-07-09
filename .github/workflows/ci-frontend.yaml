@@ -1,0 +1,70 @@
+name: CI - Frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - js/frontend/**
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - js/frontend/**
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  checks: write
+  pull-requests: write
+
+jobs:
+  sonarqube-frontend:
+    name: SonarQube - Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          projectBaseDir: js/frontend
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      checks: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".node-version"
+          cache: "pnpm"
+
+      - name: Install js packages
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: ./js/frontend
+        run: pnpm run lint
+
+      - name: Build
+        working-directory: ./js/frontend
+        run: pnpm run build

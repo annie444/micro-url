@@ -8,6 +8,9 @@
   ],
   "scripts": {
     "build-server": "cargo build -p server --release",
+    "build-cli": "cargo build -p cli --release",
+    "build-frontend": "pnpm --filter frontend build",
+    "build": "pnpm build-server && pnpm build-cli && pnpm build-frontend",
     "run": "shuttle run",
     "lint": "eslint . && prettier --check . && cargo clippy --all-targets --all-features -- -D warnings && cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings",
     "format": "eslint . --fix && prettier --write . && cargo fmt --all && cargo clippy --all-targets --all-features --fix -- -D warnings"
