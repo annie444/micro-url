@@ -67,7 +67,7 @@ jobs:
 
       - name: Lint
         working-directory: ./js/frontend
-        run: pnpm run lint
+        run: pnpm run lint-ci
 
       - name: Build
         working-directory: ./js/frontend

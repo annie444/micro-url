@@ -13,6 +13,7 @@
     "build": "pnpm run build-server && pnpm run build-cli && pnpm run build-frontend",
     "run": "shuttle run",
     "lint": "eslint . && prettier --check . && cargo clippy --all-targets --all-features -- -D warnings && cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings",
+    "lint-ci": "eslint . --max-warnings 0",
     "format": "eslint . --fix && prettier --write . && cargo fmt --all && cargo clippy --all-targets --all-features --fix -- -D warnings"
   },
   "engines": {
