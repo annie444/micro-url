@@ -2,7 +2,7 @@ use chrono::Utc;
 use entity::{sessions, short_link, views};
 #[cfg(feature = "ips")]
 use sea_orm::prelude::IpNetwork;
-use sea_orm::{entity::*, query::*};
+use sea_orm::{DbConn, entity::*, query::*};
 use serde_json::json;
 use tracing::{error, instrument, trace};
 
@@ -116,18 +116,7 @@ pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, A
         created_at: ActiveValue::Set(Utc::now().naive_utc()),
         ..Default::default()
     };
-    match view.insert(&conn).await {
-        Ok(model) => {
-            trace!("Views updated successfully for url {}: {:?}", id, model);
-            Ok(ActorOutputMessage {
-                msg: format!("Views updated successfully for url {}: {:?}", id, model),
-            })
-        }
-        Err(e) => {
-            error!("Error updating views for url {}: {}", id, e.to_string());
-            Err(e.into())
-        }
-    }
+    insert_view(&id, view, &conn).await
 }
 
 #[cfg(all(feature = "headers", not(feature = "ips")))]
@@ -153,18 +142,7 @@ pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, A
         created_at: ActiveValue::Set(Utc::now().naive_utc()),
         ..Default::default()
     };
-    match view.insert(&conn).await {
-        Ok(model) => {
-            trace!("Views updated successfully for url {id}: {model:?}");
-            Ok(ActorOutputMessage {
-                msg: format!("Views updated successfully for url {id}: {model:?}"),
-            })
-        }
-        Err(e) => {
-            error!("Error updating views for url {id}: {}", e.to_string());
-            Err(e.into())
-        }
-    }
+    insert_view(&id, view, &conn).await
 }
 
 #[cfg(all(feature = "headers", feature = "ips"))]
@@ -192,7 +170,16 @@ pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, A
         created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
         ..Default::default()
     };
-    match view.insert(&conn).await {
+    insert_view(&id, view, &conn).await
+}
+
+#[instrument]
+async fn insert_view(
+    id: &str,
+    view: views::ActiveModel,
+    conn: &DbConn,
+) -> Result<ActorOutputMessage, ActorError> {
+    match view.insert(conn).await {
         Ok(model) => {
             trace!("Views updated successfully for url {id}: {model:?}");
             Ok(ActorOutputMessage {
