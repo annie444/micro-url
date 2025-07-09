@@ -134,8 +134,8 @@ impl ServerState {
         let mut cache: MutexGuard<LruCache<String, String>> =
             self.cache.lock().map_err(|e| ArcMutexError {
                 error: format!(
-                    "Unable to acquire lock on the mutex with key {} and value {}. Got error: {}",
-                    key, val, e
+                    "Unable to acquire lock on the mutex with key {key} and value {val}. Got \
+                     error: {e}",
                 ),
             })?;
         Ok((*cache).put(key, val))
@@ -146,8 +146,7 @@ impl ServerState {
         let mut cache: MutexGuard<LruCache<String, String>> =
             self.cache.lock().map_err(|e| ArcMutexError {
                 error: format!(
-                    "Unable to acquire lock on the mutex with key {}. Got error: {}",
-                    key, e
+                    "Unable to acquire lock on the mutex with key {key}. Got error: {e}",
                 ),
             })?;
         Ok((*cache).get(key).cloned())
@@ -158,8 +157,7 @@ impl ServerState {
         let mut cache: MutexGuard<LruCache<String, String>> =
             self.cache.lock().map_err(|e| ArcMutexError {
                 error: format!(
-                    "Unable to acquire lock on the mutex with key {}. Got error: {}",
-                    key, e
+                    "Unable to acquire lock on the mutex with key {key}. Got error: {e}",
                 ),
             })?;
         Ok((*cache).pop_entry(key))
@@ -168,10 +166,7 @@ impl ServerState {
     #[tracing::instrument]
     pub fn increment(&self) -> Result<String, ArcMutexError> {
         let mut num: MutexGuard<usize> = self.counter.lock().map_err(|e| ArcMutexError {
-            error: format!(
-                "Unable to acquire lock on the mutex for the counter. Got error: {}",
-                e
-            ),
+            error: format!("Unable to acquire lock on the mutex for the counter. Got error: {e}",),
         })?;
         *num += 1;
         let mut num: usize = *num;

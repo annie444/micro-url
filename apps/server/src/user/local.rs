@@ -126,7 +126,7 @@ pub async fn local_login(
     };
 
     let id_cookie = Cookie::build(("sid", session.session_id))
-        .domain(format!(".{}", domain))
+        .domain(format!(".{domain}"))
         .path("/")
         .secure(true)
         .http_only(true);

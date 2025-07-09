@@ -131,7 +131,7 @@ pub async fn oidc_callback(
     let token = token_response.access_token().secret().to_owned();
 
     let id_cookie = Cookie::build(("sid", token.clone()))
-        .domain(format!(".{}", domain))
+        .domain(format!(".{domain}"))
         .path("/")
         .secure(true)
         .http_only(true)

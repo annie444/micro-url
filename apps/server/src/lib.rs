@@ -87,14 +87,14 @@ pub async fn init_router(config: config::ServerConfig, state: Option<ServerState
     let mut asset_path = current_dir().unwrap();
     asset_path.push(&config.assets_path);
 
-    info!("Assets path: {:?}", asset_path);
+    info!("Assets path: {asset_path:?}");
 
     if !asset_path.exists() {
-        panic!("Assets path does not exist: {:?}", asset_path);
+        panic!("Assets path does not exist: {asset_path:?}");
     }
 
     if !asset_path.is_dir() {
-        panic!("Assets path is not a directory: {:?}", asset_path);
+        panic!("Assets path is not a directory: {asset_path:?}");
     }
 
     let layers = build_layers(x_request_id, trace_layer, &config);

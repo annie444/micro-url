@@ -114,7 +114,7 @@ impl GetConfig for ServerConfig {
             .parse()
             .expect("PORT must be a number");
         let scheme = env::var("SCHEME").unwrap_or("http".to_string());
-        let internal_url = env::var("INTERNAL_URL").unwrap_or(format!("{}:{}", addr, port));
+        let internal_url = env::var("INTERNAL_URL").unwrap_or(format!("{addr}:{port}"));
         let external_url =
             env::var("EXTERNAL_URL").unwrap_or(format!("{}://{}", &scheme, &internal_url));
         let assets_path = env::var("ASSETS_PATH").unwrap_or("../../js/frontend/dist".to_string());

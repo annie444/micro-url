@@ -112,11 +112,11 @@ fn image_response(img: Vec<u8>, content_type: &str) -> Response {
         .status(StatusCode::OK)
         .header(
             header::CONTENT_TYPE,
-            format!("image/{}; charset=utf-8", content_type),
+            format!("image/{content_type}; charset=utf-8"),
         )
         .header(
             header::CONTENT_DISPOSITION,
-            format!("attachment; filename=\"qrcode.{}\"", content_type),
+            format!("attachment; filename=\"qrcode.{content_type}\""),
         )
         .body(Body::from(Cow::<'static, [u8]>::Owned(img)))
     {
