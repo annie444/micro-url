@@ -2,7 +2,7 @@ use chrono::Utc;
 use entity::{sessions, short_link, views};
 #[cfg(feature = "ips")]
 use sea_orm::prelude::IpNetwork;
-use sea_orm::{entity::*, query::*};
+use sea_orm::{DbConn, entity::*, query::*};
 use serde_json::json;
 use tracing::{error, instrument, trace};
 
@@ -39,7 +39,7 @@ pub(super) async fn clean_urls(db: DbInput) -> Result<ActorOutputMessage, ActorE
     };
 
     Ok(ActorOutputMessage {
-        msg: format!("Short links were cleaned deleting {} urls", count),
+        msg: format!("Short links were cleaned deleting {count} urls"),
     })
 }
 
@@ -72,7 +72,7 @@ pub(super) async fn clean_sessions(db: DbInput) -> Result<ActorOutputMessage, Ac
     };
 
     Ok(ActorOutputMessage {
-        msg: format!("Sessions were cleaned deleting {} expired sessions", count),
+        msg: format!("Sessions were cleaned deleting {count} expired sessions"),
     })
 }
 
@@ -88,13 +88,13 @@ pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, A
     };
     match view.insert(&conn).await {
         Ok(model) => {
-            trace!("Views updated successfully for url {}: {:?}", id, model);
+            trace!("Views updated successfully for url {id}: {model:?}");
             Ok(ActorOutputMessage {
-                msg: format!("Views updated successfully for url {}: {:?}", id, model),
+                msg: format!("Views updated successfully for url {id}: {model:?}"),
             })
         }
         Err(e) => {
-            error!("Error updating views for url {}: {}", id, e.to_string());
+            error!("Error updating views for url {id}: {}", e.to_string());
             Err(e.into())
         }
     }
@@ -116,18 +116,7 @@ pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, A
         created_at: ActiveValue::Set(Utc::now().naive_utc()),
         ..Default::default()
     };
-    match view.insert(&conn).await {
-        Ok(model) => {
-            trace!("Views updated successfully for url {}: {:?}", id, model);
-            Ok(ActorOutputMessage {
-                msg: format!("Views updated successfully for url {}: {:?}", id, model),
-            })
-        }
-        Err(e) => {
-            error!("Error updating views for url {}: {}", id, e.to_string());
-            Err(e.into())
-        }
-    }
+    insert_view(&id, view, &conn).await
 }
 
 #[cfg(all(feature = "headers", not(feature = "ips")))]
@@ -153,18 +142,7 @@ pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, A
         created_at: ActiveValue::Set(Utc::now().naive_utc()),
         ..Default::default()
     };
-    match view.insert(&conn).await {
-        Ok(model) => {
-            trace!("Views updated successfully for url {}: {:?}", id, model);
-            Ok(ActorOutputMessage {
-                msg: format!("Views updated successfully for url {}: {:?}", id, model),
-            })
-        }
-        Err(e) => {
-            error!("Error updating views for url {}: {}", id, e.to_string());
-            Err(e.into())
-        }
-    }
+    insert_view(&id, view, &conn).await
 }
 
 #[cfg(all(feature = "headers", feature = "ips"))]
@@ -192,15 +170,24 @@ pub(super) async fn update_views(msg: ViewInput) -> Result<ActorOutputMessage, A
         created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
         ..Default::default()
     };
-    match view.insert(&conn).await {
+    insert_view(&id, view, &conn).await
+}
+
+#[instrument]
+async fn insert_view(
+    id: &str,
+    view: views::ActiveModel,
+    conn: &DbConn,
+) -> Result<ActorOutputMessage, ActorError> {
+    match view.insert(conn).await {
         Ok(model) => {
-            trace!("Views updated successfully for url {}: {:?}", id, model);
+            trace!("Views updated successfully for url {id}: {model:?}");
             Ok(ActorOutputMessage {
-                msg: format!("Views updated successfully for url {}: {:?}", id, model),
+                msg: format!("Views updated successfully for url {id}: {model:?}"),
             })
         }
         Err(e) => {
-            error!("Error updating views for url {}: {}", id, e.to_string());
+            error!("Error updating views for url {id}: {}", e.to_string());
             Err(e.into())
         }
     }

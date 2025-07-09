@@ -76,7 +76,7 @@ impl IntoResponse for ServerError {
             }
             Self::UnknownClient(e) => {
                 warn!("Unknown OIDC client: {}", e);
-                (StatusCode::NOT_FOUND, format!("Unknown OIDC client: {}", e))
+                (StatusCode::NOT_FOUND, format!("Unknown OIDC client: {e}"))
             }
             Self::Request(e) => {
                 error!("Request error: {}", e);

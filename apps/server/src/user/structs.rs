@@ -113,13 +113,13 @@ impl IntoResponse for NewUserResponse {
 
 impl From<argon2::password_hash::Error> for NewUserResponse {
     fn from(e: argon2::password_hash::Error) -> Self {
-        Self::PasswordHashError(format!("Password hash error: {}", e).into())
+        Self::PasswordHashError(format!("Password hash error: {e}").into())
     }
 }
 
 impl From<sea_orm::DbErr> for NewUserResponse {
     fn from(e: sea_orm::DbErr) -> Self {
-        Self::DatabaseError(format!("Database error: {}", e).into())
+        Self::DatabaseError(format!("Database error: {e}").into())
     }
 }
 
@@ -159,7 +159,7 @@ impl IntoResponse for LoginResponse {
     fn into_response(self) -> Response {
         match self {
             LoginResponse::UserLoggedIn(model, jar) => {
-                info!("{:?}", model);
+                info!("{model:?}");
                 (StatusCode::OK, jar, Json(model)).into_response()
             }
             LoginResponse::InvalidCredentials(e) => {
@@ -180,13 +180,13 @@ impl IntoResponse for LoginResponse {
 
 impl From<sea_orm::DbErr> for LoginResponse {
     fn from(e: sea_orm::DbErr) -> Self {
-        Self::DatabaseError(format!("Database error: {}", e).into())
+        Self::DatabaseError(format!("Database error: {e}").into())
     }
 }
 
 impl From<argon2::password_hash::Error> for LoginResponse {
     fn from(e: argon2::password_hash::Error) -> Self {
-        Self::InvalidCredentials(format!("Password hash error: {}", e).into())
+        Self::InvalidCredentials(format!("Password hash error: {e}").into())
     }
 }
 
@@ -221,7 +221,7 @@ impl IntoResponse for LogoutResponse {
     fn into_response(self) -> Response {
         match self {
             LogoutResponse::UserLoggedOut(session_id, jar) => {
-                info!("{:?}", session_id);
+                info!("{session_id:?}");
                 (StatusCode::OK, jar, Json(session_id)).into_response()
             }
             LogoutResponse::InvalidSession(e) => {
@@ -233,7 +233,7 @@ impl IntoResponse for LogoutResponse {
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response()
             }
             LogoutResponse::UserNotLoggedIn(e) => {
-                warn!("{:?}", e);
+                warn!("{e:?}");
                 (StatusCode::OK, Json(e)).into_response()
             }
             LogoutResponse::SessionNotFound(e) => {
@@ -246,7 +246,7 @@ impl IntoResponse for LogoutResponse {
 
 impl From<sea_orm::DbErr> for LogoutResponse {
     fn from(e: sea_orm::DbErr) -> Self {
-        Self::DatabaseError(format!("Database error: {}", e).into())
+        Self::DatabaseError(format!("Database error: {e}").into())
     }
 }
 
@@ -264,7 +264,7 @@ pub enum UserProfileResponse {
 
 impl From<sea_orm::DbErr> for UserProfileResponse {
     fn from(e: sea_orm::DbErr) -> Self {
-        Self::DatabaseError(format!("Database error: {}", e).into())
+        Self::DatabaseError(format!("Database error: {e}").into())
     }
 }
 
@@ -273,7 +273,7 @@ impl IntoResponse for UserProfileResponse {
     fn into_response(self) -> Response {
         match self {
             UserProfileResponse::UserProfile(profile) => {
-                info!("{:?}", profile);
+                info!("{profile:?}");
                 (StatusCode::OK, Json(profile)).into_response()
             }
             UserProfileResponse::InvalidSession(e) => {
@@ -407,13 +407,13 @@ pub enum UserLinksResponse {
 
 impl From<sea_orm::DbErr> for UserLinksResponse {
     fn from(e: sea_orm::DbErr) -> Self {
-        Self::DatabaseError(format!("Database error: {}", e).into())
+        Self::DatabaseError(format!("Database error: {e}").into())
     }
 }
 
 impl From<sea_orm::TransactionError<sea_orm::DbErr>> for UserLinksResponse {
     fn from(value: sea_orm::TransactionError<sea_orm::DbErr>) -> Self {
-        Self::DatabaseError(format!("Error commit database transaction: {}", value).into())
+        Self::DatabaseError(format!("Error commit database transaction: {value}").into())
     }
 }
 
@@ -422,7 +422,7 @@ impl IntoResponse for UserLinksResponse {
     fn into_response(self) -> Response {
         match self {
             UserLinksResponse::UserLinksAndViews(links) => {
-                info!("{:?}", links);
+                info!("{links:?}");
                 (StatusCode::OK, Json(links)).into_response()
             }
             UserLinksResponse::InvalidSession(e) => {
@@ -564,49 +564,49 @@ impl
             StandardErrorResponse<CoreErrorResponseType>,
         >,
     ) -> Self {
-        Self::InvalidCsrfToken(format!("Request token error: {}", e).into())
+        Self::InvalidCsrfToken(format!("Request token error: {e}").into())
     }
 }
 
 impl From<ClaimsVerificationError> for OidcCallbackResponse {
     fn from(e: ClaimsVerificationError) -> Self {
-        Self::InvalidClaims(format!("Claims verification error: {}", e).into())
+        Self::InvalidClaims(format!("Claims verification error: {e}").into())
     }
 }
 
 impl From<ConfigurationError> for OidcCallbackResponse {
     fn from(e: ConfigurationError) -> Self {
-        Self::InvalidOidcConfig(format!("Configuration error: {}", e).into())
+        Self::InvalidOidcConfig(format!("Configuration error: {e}").into())
     }
 }
 
 impl From<SignatureVerificationError> for OidcCallbackResponse {
     fn from(e: SignatureVerificationError) -> Self {
-        Self::InvalidSignature(format!("Signature verification error: {}", e).into())
+        Self::InvalidSignature(format!("Signature verification error: {e}").into())
     }
 }
 
 impl From<TryFromIntError> for OidcCallbackResponse {
     fn from(e: TryFromIntError) -> Self {
-        Self::IntegerParseError(format!("Integer parse error: {}", e).into())
+        Self::IntegerParseError(format!("Integer parse error: {e}").into())
     }
 }
 
 impl From<UserInfoError<HttpClientError<reqwest::Error>>> for OidcCallbackResponse {
     fn from(e: UserInfoError<HttpClientError<reqwest::Error>>) -> Self {
-        Self::UserInfoError(format!("User info error: {}", e).into())
+        Self::UserInfoError(format!("User info error: {e}").into())
     }
 }
 
 impl From<SigningError> for OidcCallbackResponse {
     fn from(e: SigningError) -> Self {
-        Self::SignatureError(format!("Signing error: {}", e).into())
+        Self::SignatureError(format!("Signing error: {e}").into())
     }
 }
 
 impl From<sea_orm::DbErr> for OidcCallbackResponse {
     fn from(e: sea_orm::DbErr) -> Self {
-        Self::DatabaseError(format!("Database error: {}", e).into())
+        Self::DatabaseError(format!("Database error: {e}").into())
     }
 }
 

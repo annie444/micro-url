@@ -255,16 +255,16 @@ impl From<JsonValue> for HeaderMapDef {
                     }
                     JsonValue::Number(n) => {
                         if let Some(val) = map.get_mut(&name) {
-                            val.push(format!("{}", n));
+                            val.push(format!("{n}"));
                         } else {
-                            map.insert(name, vec![format!("{}", n)]);
+                            map.insert(name, vec![format!("{n}")]);
                         }
                     }
                     JsonValue::Bool(b) => {
                         if let Some(val) = map.get_mut(&name) {
-                            val.push(format!("{}", b));
+                            val.push(format!("{b}"));
                         } else {
-                            map.insert(name, vec![format!("{}", b)]);
+                            map.insert(name, vec![format!("{b}")]);
                         }
                     }
                     JsonValue::String(s) => {
@@ -295,10 +295,10 @@ impl From<JsonValue> for HeaderMapDef {
             }
             match val {
                 JsonValue::Bool(b) => {
-                    map.insert("bool".to_string(), vec![format!("{}", b)]);
+                    map.insert("bool".to_string(), vec![format!("{b}")]);
                 }
                 JsonValue::Number(n) => {
-                    map.insert("number".to_string(), vec![format!("{}", n)]);
+                    map.insert("number".to_string(), vec![format!("{n}")]);
                 }
                 JsonValue::String(s) => {
                     map.insert("string".to_string(), vec![s]);

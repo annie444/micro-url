@@ -231,7 +231,7 @@ impl ActorPool {
             .thread_name_fn(|| {
                 static ATOMIC_ID: AtomicUsize = AtomicUsize::new(0);
                 let id = ATOMIC_ID.fetch_add(1, Ordering::SeqCst);
-                format!("micro-url-worker-{}", id)
+                format!("micro-url-worker-{id}")
             })
             .thread_stack_size(config.stack_size)
             .thread_keep_alive(config.keep_alive)
