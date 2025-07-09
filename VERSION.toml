@@ -11,12 +11,20 @@ version = "0.1.0"
 file = "libs/entity/Cargo.toml"
 expr = 'version = "(.*)"'
 
+[[package.entity.files]]
+file = "libs/entity/sonar-project.properties"
+expr = "sonar.projectVersion=(.*)"
+
 [package.frontend]
 version = "0.1.0"
 
 [[package.frontend.files]]
 file = "js/frontend/package.json"
 expr = '"version": "(.*)",'
+
+[[package.frontend.files]]
+file = "js/frontend/sonar-project.properties"
+expr = "sonar.projectVersion=(.*)"
 
 [package.micro-url]
 version = "0.1.0"
@@ -25,6 +33,10 @@ version = "0.1.0"
 file = "apps/micro_url/Cargo.toml"
 expr = 'version = "(.*)"'
 
+[[package.micro-url.files]]
+file = "apps/micro_url/sonar-project.properties"
+expr = "sonar.projectVersion=(.*)"
+
 [package.migration]
 version = "0.1.0"
 
@@ -32,9 +44,17 @@ version = "0.1.0"
 file = "libs/migration/Cargo.toml"
 expr = 'version = "(.*)"'
 
+[[package.migration.files]]
+file = "libs/migration/sonar-project.properties"
+expr = "sonar.projectVersion=(.*)"
+
 [package.server]
 version = "0.1.0"
 
 [[package.server.files]]
 file = "apps/server/Cargo.toml"
 expr = 'version = "(.*)"'
+
+[[package.server.files]]
+file = "apps/server/sonar-project.properties"
+expr = "sonar.projectVersion=(.*)"
