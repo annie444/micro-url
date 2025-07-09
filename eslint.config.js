@@ -12,8 +12,6 @@ export default ts.config([
     "**/node_modules",
     ".cargo/",
     "**/.cargo",
-    ".nx/",
-    "**/.nx",
     "apps/",
     "libs/",
     "kanidm/",

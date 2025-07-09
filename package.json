@@ -9,8 +9,8 @@
   "scripts": {
     "build-server": "cargo build -p server --release",
     "run": "shuttle run",
-    "lint": "eslint . && prettier --check . && cargo clippy --all-targets --all-features -- -D warnings && cargo fmt --all -- --check",
-    "format": "eslint . --fix && prettier --write . && cargo fmt --all"
+    "lint": "eslint . && prettier --check . && cargo clippy --all-targets --all-features -- -D warnings && cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings",
+    "format": "eslint . --fix && prettier --write . && cargo fmt --all && cargo clippy --all-targets --all-features --fix -- -D warnings"
   },
   "engines": {
     "node": ">=22.14.0",
@@ -20,8 +20,6 @@
   "devDependencies": {
     "@eslint/js": "^9.24.0",
     "@monodon/rust": "2.3.0",
-    "@nx/node": "20.7.2",
-    "@nx/workspace": "^20.7.2",
     "@typescript-eslint/parser": "^8.29.1",
     "eslint": "^9.24.0",
     "eslint-config-prettier": "^10.1.1",
@@ -33,9 +31,7 @@
     "eslint-plugin-prettier": "^5.2.6",
     "eslint-plugin-promise": "^7.2.1",
     "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin@latest": "link:nx/eslint-plugin@latest",
     "globals": "^16.0.0",
-    "nx": "20.7.2",
     "prettier": "^3.5.3",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.6.11",
