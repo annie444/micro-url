@@ -1,0 +1,97 @@
+name: CI - Migration
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - libs/migration/**
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - libs/migration/**
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref == 'refs/heads/main' && format('ci-migration-main-{0}', github.sha) || format('ci-migration-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  actions: read
+  contents: write
+  checks: write
+  pull-requests: write
+
+jobs:
+  sonarqube-migration:
+    name: SonarQube - Migration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          projectBaseDir: libs/migration
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_MIGRATION }}
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          - beta
+          - nightly
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          cache-key: ${{ runner.os }}-${{ matrix.toolchain }}
+
+      - name: Build
+        run: cargo build --package migration --verbose
+
+      - name: Test
+        run: cargo test --package migration --verbose
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          - beta
+          - nightly
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: clippy,rustfmt
+          cache-key: ${{ runner.os }}-${{ matrix.toolchain }}
+
+      - name: Run cargo checks
+        run: cargo check --package migration --verbose
+
+      - name: Run clippy
+        run: cargo clippy --package migration --verbose -- -D warnings

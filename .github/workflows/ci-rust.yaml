@@ -1,0 +1,61 @@
+name: CI - Rust Packages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - apps/micro_url/**
+      - apps/server/**
+      - libs/entity/**
+      - libs/migration/**
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - apps/micro_url/**
+      - apps/server/**
+      - libs/entity/**
+      - libs/migration/**
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref == 'refs/heads/main' && format('ci-rust-main-{0}', github.sha) || format('ci-rust-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  actions: read
+  contents: write
+  checks: write
+  pull-requests: write
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          - beta
+          - nightly
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt
+          cache-key: ${{ runner.os }}-${{ matrix.toolchain }}
+
+      - name: Run rustfmt
+        uses: actions-rust-lang/rustfmt@v1
+
+      - name: Run cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@v2

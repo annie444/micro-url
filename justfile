@@ -59,37 +59,33 @@ install:
     >&2 echo "You do not need to re-run this script after installing a container runtime."
   fi
 
-[doc("Runs the NX build sequence")]
-[group("nx")]
+[doc("Runs the build sequence")]
+[group("dev")]
 build:
-  pnpm exec nx run-many --target=build
+  pnpm exec build
 
-[doc("Runs the NX lint sequence")]
-[group("nx")]
+[doc("Runs the lint sequence")]
+[group("dev")]
 lint:
-  pnpm exec nx run-many --target=lint
+  pnpm exec lint
 
-[doc("Runs the NX test sequence")]
-[group("nx")]
+[doc("Runs the test sequence")]
+[group("dev")]
 test:
-  pnpm exec nx run-many --target=test
-
-[doc("Alias for `pnpm exec nx'")]
-[group("nx")]
-nx *args:
-  pnpm exec nx {{args}}
+  cargo test --workspace --all-features --all-targets
 
 [doc("formats all files")]
 [group("dev")]
 format:
   pnpm exec eslint . --fix 
   pnpm exec prettier --write .
-  cargo clippy --fix
+  cargo clippy --fix --workspace --all-targets --allow-dirty \
+    --allow-staged -- -D warnings
   cargo fmt --all
 
 [doc("Runs the project in dev mode (`no hot-reloading`)")]
 [group("dev")]
-run $RUST_LOG="trace": clean-shuttle oidc-up (nx "run frontend:build")
+run $RUST_LOG="trace": clean-shuttle oidc-up build
   #!/usr/bin/env bash
   set -eo pipefail
   if [ ! -f ./Secrets.toml ]; then
