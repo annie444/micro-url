@@ -5,7 +5,7 @@ on:
     branches:
       - main
   pull_request:
-    types: 
+    types:
       - opened
       - synchronize
       - reopened
@@ -18,17 +18,80 @@ permissions:
   pull-requests: write
 
 jobs:
-  sonarqube:
-    name: SonarQube
+  sonarqube-entity:
+    name: SonarQube - Entity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          projectBaseDir: libs/entity
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_ENTITY }}
+
+  sonarqube-migration:
+    name: SonarQube - Migration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          projectBaseDir: libs/migration
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_MIGRATION }}
+
+  sonarqube-server:
+    name: SonarQube - Server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          projectBaseDir: apps/server
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_SERVER }}
+
+  sonarqube-cli:
+    name: SonarQube - Cli
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          projectBaseDir: apps/micro_url
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_CLI }}
+
+  sonarqube-frontend:
+    name: SonarQube - Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          projectBaseDir: js/frontend
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
 
   build:
     name: Build
