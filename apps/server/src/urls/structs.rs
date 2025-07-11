@@ -14,10 +14,10 @@ use ts_rs::TS;
 use utoipa::{IntoParams, IntoResponses, ToSchema};
 use uuid::Uuid;
 
-use crate::{error::ArcMutexError, utils::BasicError};
+use crate::{TS_OUTPUT_DIR, error::ArcMutexError, utils::BasicError};
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoParams, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 #[into_params(parameter_in = Query, style = Form)]
 pub struct QrCodeParams {
     #[ts(optional)]
@@ -41,7 +41,7 @@ pub struct QrCodeParams {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 #[serde(rename_all = "lowercase")]
 pub enum ImageFormats {
     Png,
@@ -61,7 +61,7 @@ impl Display for ImageFormats {
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum QrCodeResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     UrlParseError(#[to_schema] BasicError),
@@ -182,7 +182,7 @@ impl IntoResponse for QrCodeResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct NewUrlRequest {
     pub url: String,
     pub short: Option<String>,
@@ -192,7 +192,7 @@ pub struct NewUrlRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum NewUrlResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     UrlParseError(#[to_schema] BasicError),
@@ -264,7 +264,7 @@ impl From<url::ParseError> for NewUrlResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum DeleteUrlResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),
@@ -328,7 +328,7 @@ impl From<sea_orm::DbErr> for DeleteUrlResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum UpdateUrlResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     UrlParseError(#[to_schema] BasicError),
@@ -388,7 +388,7 @@ impl From<url::ParseError> for UpdateUrlResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum GetUrlResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),
@@ -460,7 +460,7 @@ impl From<async_channel::SendError<crate::actor::ActorInputMessage>> for GetUrlR
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum GetUrlInfoResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),

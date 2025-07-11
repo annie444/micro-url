@@ -44,6 +44,8 @@ use tracing::info;
 
 use self::logger::MicroUrlMakeSpan;
 
+pub(crate) const TS_OUTPUT_DIR: &str = "../../../js/api/src/types/";
+
 #[derive(Clone, Default)]
 struct MicroUrlMakeRequestId {
     counter: Arc<AtomicU64>,

@@ -22,10 +22,13 @@ use uuid::Uuid;
 
 #[cfg(feature = "headers")]
 use crate::utils::HeaderMapDef;
-use crate::utils::{BasicError, BasicResponse};
+use crate::{
+    TS_OUTPUT_DIR,
+    utils::{BasicError, BasicResponse},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoParams, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 #[into_params(parameter_in = Query, style = Form)]
 pub struct Paginate {
     pub page: u64,
@@ -33,7 +36,7 @@ pub struct Paginate {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct OidcName {
     pub name: String,
 }
@@ -46,7 +49,7 @@ impl Display for OidcName {
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum OidcNameResponse {
     #[response(status = StatusCode::OK)]
     OidcName(#[to_schema] OidcName),
@@ -65,7 +68,7 @@ impl IntoResponse for OidcNameResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct NewUserRequest {
     pub name: String,
     pub email: String,
@@ -75,7 +78,7 @@ pub struct NewUserRequest {
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
 #[allow(clippy::large_enum_variant)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum NewUserResponse {
     #[response(status = StatusCode::BAD_REQUEST)]
     UserAlreadyExists(#[to_schema] BasicError),
@@ -124,7 +127,7 @@ impl From<sea_orm::DbErr> for NewUserResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
@@ -133,7 +136,7 @@ pub struct LoginRequest {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[allow(clippy::large_enum_variant)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum LoginResponseType {
     InvalidCredentials(BasicError),
     DatabaseError(BasicError),
@@ -192,7 +195,7 @@ impl From<argon2::password_hash::Error> for LoginResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum LogoutResponseType {
     InvalidSession(BasicError),
     DatabaseError(BasicError),
@@ -252,7 +255,7 @@ impl From<sea_orm::DbErr> for LogoutResponse {
 
 #[derive(Debug, Clone, IntoResponses, Serialize, Deserialize, TS)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum UserProfileResponse {
     #[response(status = StatusCode::UNAUTHORIZED)]
     InvalidSession(#[to_schema] BasicError),
@@ -289,7 +292,7 @@ impl IntoResponse for UserProfileResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct UserLinksAndViews {
     pub urls: Vec<UserLinkWithViews>,
 }
@@ -306,7 +309,7 @@ impl From<Vec<(short_link::Model, Vec<views::Model>)>> for UserLinksAndViews {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct UserLinkWithViews {
     pub id: String,
     pub short_url: String,
@@ -339,7 +342,7 @@ impl From<(short_link::Model, Vec<views::Model>)> for UserLinkWithViews {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct UserView {
     pub id: i32,
     #[ts(optional)]
@@ -378,7 +381,7 @@ impl From<views::Model> for UserView {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromQueryResult, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct UserLink {
     pub id: String,
     pub short_url: String,
@@ -393,7 +396,7 @@ pub struct UserLink {
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoResponses, TS)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum UserLinksResponse {
     #[response(status = StatusCode::UNAUTHORIZED)]
     InvalidSession(#[to_schema] BasicError),
@@ -443,7 +446,7 @@ impl IntoResponse for UserLinksResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(untagged)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub enum OidcCallbackResponseType {
     InvalidCsrfToken(BasicError),
     InvalidClaims(BasicError),

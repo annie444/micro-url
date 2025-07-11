@@ -1,0 +1,13 @@
+
+default:
+  @just --list
+
+types:
+  #!/usr/bin/env bash
+  if [ -f src/types.ts ]; then
+    rm -i src/types.ts
+    touch src/types.ts
+  fi
+  for file in $(find src/types -name "*.ts"); do
+    /bin/cat ${file} | grep -Ev '^(\/\/|import|export \*)' >> src/types.ts
+  done

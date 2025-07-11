@@ -59,19 +59,9 @@ install:
     >&2 echo "You do not need to re-run this script after installing a container runtime."
   fi
 
-[doc("Runs the build sequence")]
+[doc("Generates the TypeScript types from the Rust code")]
 [group("dev")]
-build:
-  pnpm exec build
-
-[doc("Runs the lint sequence")]
-[group("dev")]
-lint:
-  pnpm exec lint
-
-[doc("Runs the test sequence")]
-[group("dev")]
-test:
+ts-gen $TS_RS_EXPORT_DIR="../../js/api/src/types":
   cargo test --workspace --all-features --all-targets
 
 [doc("formats all files")]
@@ -83,9 +73,13 @@ format:
     --allow-staged -- -D warnings
   cargo fmt --all
 
+[private]
+pnpm target:
+  pnpm run {{ target }}
+
 [doc("Runs the project in dev mode (`no hot-reloading`)")]
 [group("dev")]
-run $RUST_LOG="trace": clean-shuttle oidc-up build
+run $RUST_LOG="trace": clean-shuttle oidc-up (pnpm "build")
   #!/usr/bin/env bash
   set -eo pipefail
   if [ ! -f ./Secrets.toml ]; then
@@ -245,10 +239,8 @@ generate:
     --date-time-crate=chrono \
     --model-extra-derives "utoipa::ToSchema, ts_rs::TS" \
     --model-extra-attributes "ts(export)" \
-    --model-extra-attributes 'ts(export_to = "../../../js/frontend/src/lib/types/")' \
     --enum-extra-derives "utoipa::ToSchema, ts_rs::TS" \
-    --enum-extra-attributes "ts(export)" \
-    --enum-extra-attributes 'ts(export_to = "../../../js/frontend/src/lib/types/")' \
+    --enum-extra-attributes "ts(export)"
 
 [doc("Runs a development database in a container (named `dev-db`)")]
 [group("db")]
@@ -279,3 +271,26 @@ dev-db:
 [doc("Stops the development database container")]
 [group("db")]
 dev-db-stop: (_container-down "dev-db")
+
+[doc("Builds the index.ts file for the generated types")]
+[group("dev")]
+make-index:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  if [ -f js/api/src/types/index.ts ]; then
+    rm js/api/src/types/index.ts
+    touch js/api/src/types/index.ts
+  else 
+    set +e
+    mkdir -p js/api/src/types
+    set -e
+    touch js/api/src/types/index.ts
+  fi
+  for file in $(ls js/api/src/types/*.ts); do
+    file=$(basename "${file}")
+    if [ "${file}" = "index.js" ]; then
+      continue
+    else
+      echo "export * from './${file%.ts}';" >> js/api/src/types/index.ts
+    fi
+  done

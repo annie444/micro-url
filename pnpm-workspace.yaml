@@ -2,8 +2,12 @@ packages:
   - js/*
 
 onlyBuiltDependencies:
-  - "@tailwindcss/oxide"
+  - '@parcel/watcher'
+  - '@swc/core'
+  - '@tailwindcss/oxide'
   - esbuild
+  - lmdb
+  - msgpackr-extract
   - nx
   - sharp
   - unrs-resolver

@@ -1,0 +1,30 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.cjs.js",
+  "source": "src/index.ts",
+  "module": "dist/index.mjs.js",
+  "browser": "dist/index.umd.js",
+  "types": "dist/types.d.ts",
+  "scripts": {
+    "test": "jest",
+    "build": "parcel build",
+    "lint": "eslint . && prettier --check .",
+    "lint:ci": "eslint .",
+    "format": "eslint . --fix && prettier --write ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@10.13.1",
+  "devDependencies": {
+    "@jest/globals": "^30.0.4",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.4",
+    "parcel": "^2.15.4"
+  },
+  "dependencies": {
+    "axios": "^1.10.0"
+  }
+}

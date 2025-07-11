@@ -4,6 +4,7 @@ import js from "@eslint/js";
 import ts from "typescript-eslint";
 import react from "eslint-plugin-react";
 import globals from "globals";
+import jest from "eslint-plugin-jest";
 import { globalIgnores } from "eslint/config";
 
 export default ts.config([
@@ -43,6 +44,13 @@ export default ts.config([
     plugins: {
       react,
       jsxa11y,
+    },
+  },
+  {
+    files: ["js/**/tests/**/*"],
+    plugins: [jest],
+    env: {
+      "jest/globals": true,
     },
   },
 ]);

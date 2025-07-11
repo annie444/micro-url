@@ -2,6 +2,8 @@
 
 pub mod prelude;
 
+pub(crate) const TS_OUTPUT_DIR: &str = "../../../js/api/src/types/";
+
 pub mod sessions;
 pub mod short_link;
 pub mod user;

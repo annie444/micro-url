@@ -25,6 +25,7 @@ use tracing::instrument;
 use ts_rs::TS;
 use utoipa::ToSchema;
 
+use crate::TS_OUTPUT_DIR;
 #[cfg(feature = "headers")]
 use crate::error::ServerError;
 
@@ -219,7 +220,7 @@ pub(crate) fn parse_time_delta(s: &str) -> Result<TimeDelta, ServerError> {
 
 #[cfg(feature = "headers")]
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct HeaderMapDef(pub BTreeMap<String, Vec<String>>);
 
 #[cfg(feature = "headers")]
@@ -323,7 +324,7 @@ impl From<JsonValue> for HeaderMapDef {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct BasicError {
     pub error: String,
 }
@@ -349,7 +350,7 @@ impl From<&str> for BasicError {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct BasicResponse {
     pub message: String,
 }
@@ -369,14 +370,14 @@ impl From<&str> for BasicResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct AuthUrl {
     pub url: String,
     pub name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export, export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 pub struct AuthUrls(pub Vec<AuthUrl>); // New struct to hold a vector of AuthUrl
 
 pub type OidcClient = Client<

@@ -3,6 +3,8 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::TS_OUTPUT_DIR;
+
 #[derive(
     Clone,
     Debug,
@@ -16,7 +18,7 @@ use serde::{Deserialize, Serialize};
 )]
 #[sea_orm(table_name = "sessions")]
 #[ts(export)]
-#[ts(export_to = "../../../js/frontend/src/lib/types/")]
+#[ts(export)]
 #[ts(rename = "Sessions")]
 pub struct Model {
     #[sea_orm(primary_key)]
