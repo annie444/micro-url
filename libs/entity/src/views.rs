@@ -17,7 +17,6 @@ use serde::{Deserialize, Serialize};
 )]
 #[sea_orm(table_name = "views")]
 #[ts(export)]
-#[ts(export)]
 #[ts(rename = "Views")]
 pub struct Model {
     #[sea_orm(primary_key)]

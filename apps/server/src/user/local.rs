@@ -119,16 +119,29 @@ pub async fn local_login(
 
     let session = session.insert(&state.conn).await?;
 
+    // Ensure the domain is set for the cookie
+    #[cfg(not(debug_assertions))]
     let Some(domain) = state.url.domain() else {
         return Err(LoginResponse::InternalServerError(
             "Domain not set".to_string().into(),
         ));
     };
 
+    #[cfg(debug_assertions)]
+    let domain = state.url.domain().unwrap_or("localhost");
+
+    #[cfg(not(debug_assertions))]
     let id_cookie = Cookie::build(("sid", session.session_id))
         .domain(format!(".{domain}"))
         .path("/")
         .secure(true)
+        .http_only(true);
+
+    #[cfg(debug_assertions)]
+    let id_cookie = Cookie::build(("sid", session.session_id))
+        .domain(format!(".{domain}"))
+        .path("/")
+        .secure(false)
         .http_only(true);
 
     Ok(LoginResponse::UserLoggedIn(

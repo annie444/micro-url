@@ -17,22 +17,62 @@ import {
   makePostCall,
   makeDeleteCall,
   makePutCall,
+  toBasicError,
 } from "./utils";
-import { Result } from "./result";
+import { Result, ok, err } from "./result";
 import { routes } from "./routes";
+import axios, { AxiosResponse } from "axios";
 
 export function checkHealth(): Promise<Result<string, BasicError>> {
   return makeGetCall<string>(routes.health);
 }
 
-export function getQrCode(
+export async function getQrCode(
   urlId: string,
   params: QrCodeParams,
-): Promise<Result<number[], BasicError>> {
-  return makeGetCall<number[], BasicError, QrCodeParams>(
-    routes.url.urlQrCode(urlId),
-    params,
-  );
+): Promise<Result<File, BasicError>> {
+  try {
+    const response: AxiosResponse<Blob> = await axios.get(
+      routes.url.urlQrCode(urlId),
+      {
+        params,
+        responseType: "blob",
+      },
+    );
+    const contentType =
+      response.headers["Content-Type"] || response.headers["content-type"];
+    const contentDisposition =
+      response.headers["Content-Disposition"] ||
+      response.headers["content-disposition"];
+    if (
+      !contentType ||
+      (!contentDisposition &&
+        typeof contentType !== "string" &&
+        typeof contentDisposition !== "string")
+    ) {
+      return err({
+        error:
+          "Invalid response headers: Content-Type or Content-Disposition is missing.",
+      });
+    }
+    const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+    const contentTypeMatch = contentType.match(/image\/(png|jpeg|gif)/i);
+    if (!filenameMatch || !contentTypeMatch) {
+      return err({
+        error:
+          "Invalid response headers: Unable to parse filename or content type.",
+      });
+    }
+    const filename: string = filenameMatch[1];
+    const contentTypeValue: string = contentTypeMatch[0];
+    return ok(
+      new File([response.data], filename, {
+        type: contentTypeValue,
+      }),
+    );
+  } catch (error) {
+    return err(toBasicError(error));
+  }
 }
 
 export function newUrl(

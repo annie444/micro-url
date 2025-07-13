@@ -201,6 +201,6 @@ export interface Sessions {
 }
 
 export interface Paginate {
-  page: bigint;
-  size: bigint;
+  page: number;
+  size: number;
 }

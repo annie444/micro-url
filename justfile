@@ -87,7 +87,8 @@ run $RUST_LOG="trace": clean-shuttle oidc-up (pnpm "build")
   if [ ! -f ./Secrets.toml ]; then
     cp Secrets.example.toml Secrets.toml
   fi
-  shuttle run
+  PORT=$(tq -rf Secrets.toml '.PORT')
+  shuttle run --port "${PORT}"
 
 [doc("Removes the stale shuttle instance")]
 [group("dev")]

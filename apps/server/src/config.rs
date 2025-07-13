@@ -140,9 +140,16 @@ impl GetConfig for ServerConfig {
     #[tracing::instrument(skip(secrets))]
     fn from_secret(secrets: SecretStore) -> Self {
         let oidc = OidcConfig::from_secret(secrets.clone());
+        let addr = secrets.get("ADDR").unwrap_or("127.0.0.1".to_string());
+        let port: u16 = secrets
+            .get("PORT")
+            .unwrap_or("3000".to_string())
+            .parse()
+            .expect("PORT must be a number");
+        let scheme = secrets.get("SCHEME").unwrap_or("http".to_string());
         let external_url = secrets
             .get("EXTERNAL_URL")
-            .unwrap_or("http://localhost:8000".to_string());
+            .unwrap_or(format!("{}://{}:{}", &scheme, &addr, port));
         let assets_path = secrets
             .get("ASSETS_PATH")
             .unwrap_or("../../js/frontend/dist".to_string());
@@ -157,7 +164,10 @@ impl GetConfig for ServerConfig {
             assets_path,
             ip_source,
             actors,
-            ..Self::default()
+            scheme,
+            addr,
+            port,
+            ..Default::default()
         }
     }
 }
@@ -176,7 +186,7 @@ impl ServerConfig {
         let scheme = env::var("SCHEME").unwrap_or("http".to_string());
         let internal_url = env::var("INTERNAL_URL").unwrap_or(|| format!("{}:{}", addr, port));
         let external_url =
-            env::var("EXTERNAL_URL").unwrap_or(format!("{}://{}", &scheme, &internal_url));
+            env::var("EXTERNAL_URL").unwrap_or(format!("{}://{}:{}", &scheme, &addr, port));
         let assets_path = env::var("ASSETS_PATH").unwrap_or("../../js/frontend/dist".to_string());
         let oidc = OidcConfig::from_env();
         let actors = ActorPoolConfig::from_env();
@@ -196,15 +206,25 @@ impl ServerConfig {
     #[tracing::instrument(skip(secrets))]
     pub fn from_secret(secrets: SecretStore) -> Self {
         let oidc = OidcConfig::from_secret(secrets.clone());
+        let addr = secrets.get("ADDR").unwrap_or("127.0.0.1".to_string());
+        let port: u16 = secrets
+            .get("PORT")
+            .unwrap_or("3000".to_string())
+            .parse()
+            .expect("PORT must be a number");
+        let scheme = secrets.get("SCHEME").unwrap_or("http".to_string());
         let external_url = secrets
             .get("EXTERNAL_URL")
-            .unwrap_or_else(|| "http://localhost:8000".to_string());
+            .unwrap_or(format!("{}://{}:{}", &scheme, &addr, port));
         let assets_path = secrets
             .get("ASSETS_PATH")
             .unwrap_or_else(|| "../../js/frontend/dist".to_string());
         let actors = ActorPoolConfig::from_secret(secrets);
         Self {
             oidc,
+            addr,
+            port,
+            scheme,
             external_url,
             assets_path,
             actors,

@@ -1,4 +1,22 @@
-const urlRouteBase = `/api/url`;
+let urlRouteBase = "";
+let userRouteBase = "";
+let oidcRouteBase = "";
+let localRouteBase = "";
+let healthRouteBase = "";
+
+if (process.env.NODE_ENV !== "production") {
+  console.log("Using development routes");
+  healthRouteBase = "http://localhost:8081";
+  urlRouteBase = "http://localhost:8081/api/url";
+  userRouteBase = "http://localhost:8081/api/user";
+  oidcRouteBase = `${userRouteBase}/oidc`;
+  localRouteBase = `${userRouteBase}/local`;
+} else if (process.env.NODE_ENV === "production") {
+  urlRouteBase = "/api/url";
+  userRouteBase = "/api/user";
+  oidcRouteBase = `${userRouteBase}/oidc`;
+  localRouteBase = `${userRouteBase}/local`;
+}
 
 export interface UrlRoutes {
   newUrl: string;
@@ -9,16 +27,12 @@ export interface UrlRoutes {
 }
 
 export const urlRoutes: UrlRoutes = {
-  newUrl: `/api/url/new`,
+  newUrl: `${urlRouteBase}/new`,
   deleteUrl: (id: string) => `${urlRouteBase}/delete/${id}`,
   updateUrl: (id: string) => `${urlRouteBase}/update/${id}`,
   urlInfo: (id: string) => `${urlRouteBase}/${id}`,
   urlQrCode: (id: string) => `${urlRouteBase}/qr/${id}`,
 };
-
-const userRouteBase = `/api/user`;
-const oidcRouteBase = `${userRouteBase}/oidc`;
-const localRouteBase = `${userRouteBase}/local`;
 
 export interface OidcRoutes {
   provider: string;
@@ -60,7 +74,7 @@ export const userRoutes: UserRoutes = {
 
 export type HealthRoute = string;
 
-export const healthRoute: HealthRoute = `/api/health`;
+export const healthRoute: HealthRoute = `${healthRouteBase}/api/health`;
 
 export interface Routes {
   url: UrlRoutes;

@@ -1,4 +1,8 @@
-import axios, { AxiosError, type AxiosResponse } from "axios";
+import axios, {
+  AxiosError,
+  type AxiosResponse,
+  type AxiosRequestConfig,
+} from "axios";
 import { BasicError } from "./types";
 import { Result, ok, err } from "./result";
 
@@ -21,7 +25,7 @@ function isBasicError(error: unknown | BasicError): error is BasicError {
   );
 }
 
-function toBasicError(maybeError: unknown | BasicError): BasicError {
+export function toBasicError(maybeError: unknown | BasicError): BasicError {
   if (isBasicError(maybeError)) return maybeError;
 
   try {
@@ -40,11 +44,18 @@ function toBasicError(maybeError: unknown | BasicError): BasicError {
 export async function makeGetCall<R, E = BasicError, P = unknown>(
   url: string,
   params?: P,
+  config?: AxiosRequestConfig,
 ): Promise<Result<R, E | BasicError>> {
   try {
-    const response: AxiosResponse<R> = await axios.get(url, { params });
+    const response: AxiosResponse<R> = await axios.get(url, {
+      params,
+      ...config,
+    });
     return ok(response.data);
   } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(`GET ${url}`, error);
+    }
     return err(toBasicError(error));
   }
 }
@@ -53,11 +64,18 @@ export async function makePostCall<B, R, E = BasicError, P = unknown>(
   url: string,
   body: B,
   params?: P,
+  config?: AxiosRequestConfig,
 ): Promise<Result<R, E | BasicError>> {
   try {
-    const response: AxiosResponse<R> = await axios.post(url, body, { params });
+    const response: AxiosResponse<R> = await axios.post(url, body, {
+      params,
+      ...config,
+    });
     return ok(response.data);
   } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(`POST ${url}`, error);
+    }
     return err(toBasicError(error));
   }
 }
@@ -65,11 +83,18 @@ export async function makePostCall<B, R, E = BasicError, P = unknown>(
 export async function makeDeleteCall<R, E = BasicError, P = unknown>(
   url: string,
   params?: P,
+  config?: AxiosRequestConfig,
 ): Promise<Result<R, E | BasicError>> {
   try {
-    const response: AxiosResponse<R> = await axios.delete(url, { params });
+    const response: AxiosResponse<R> = await axios.delete(url, {
+      params,
+      ...config,
+    });
     return ok(response.data);
   } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(`DELETE ${url}`, error);
+    }
     return err(toBasicError(error));
   }
 }
@@ -78,11 +103,18 @@ export async function makePutCall<B, R, E = BasicError, P = unknown>(
   url: string,
   body: B,
   params?: P,
+  config?: AxiosRequestConfig,
 ): Promise<Result<R, E | BasicError>> {
   try {
-    const response: AxiosResponse<R> = await axios.put(url, body, { params });
+    const response: AxiosResponse<R> = await axios.put(url, body, {
+      params,
+      ...config,
+    });
     return ok(response.data);
   } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(`PUT ${url}`, error);
+    }
     return err(toBasicError(error));
   }
 }

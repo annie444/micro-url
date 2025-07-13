@@ -342,7 +342,7 @@ pub async fn update_url(
         new_url.short_url = ActiveValue::Set(state.url.clone().join(&short_url)?.into());
     }
     new_url.expiry_date = ActiveValue::Set(payload.expiry);
-    new_url.id = ActiveValue::Set(payload.url);
+    new_url.original_url = ActiveValue::Set(payload.url);
     new_url.updated_at = ActiveValue::set(chrono::Utc::now().naive_utc());
     let short = new_url.update(&state.conn).await?;
 
