@@ -25,7 +25,6 @@ use tracing::instrument;
 use ts_rs::TS;
 use utoipa::ToSchema;
 
-use crate::TS_OUTPUT_DIR;
 #[cfg(feature = "headers")]
 use crate::error::ServerError;
 

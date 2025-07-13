@@ -22,10 +22,7 @@ use uuid::Uuid;
 
 #[cfg(feature = "headers")]
 use crate::utils::HeaderMapDef;
-use crate::{
-    TS_OUTPUT_DIR,
-    utils::{BasicError, BasicResponse},
-};
+use crate::utils::{BasicError, BasicResponse};
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoParams, TS)]
 #[ts(export)]

@@ -15,7 +15,6 @@ use utoipa::{IntoParams, IntoResponses, ToSchema};
 use uuid::Uuid;
 
 use crate::{
-    TS_OUTPUT_DIR,
     error::ArcMutexError,
     utils::{BasicError, BasicResponse},
 };
