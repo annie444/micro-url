@@ -2,9 +2,9 @@ packages:
   - js/*
 
 onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - '@swc/core'
-  - '@tailwindcss/oxide'
+  - "@parcel/watcher"
+  - "@swc/core"
+  - "@tailwindcss/oxide"
   - core-js
   - deasync
   - esbuild

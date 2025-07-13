@@ -1,5 +1,7 @@
 import { test, describe, beforeAll, afterAll, expect } from "@jest/globals";
 import { checkHealth, newUrl } from "./index";
+import { Ok } from "./result";
+import assert from "assert";
 import {
   spawn,
   spawnSync,
@@ -137,14 +139,15 @@ describe("API Tests", () => {
     expect(url).toBeDefined();
   });
 
-  // test("getHealth", async () => {
-  //   const health = await checkHealth();
-  //   expect(health).toBeDefined();
-  //   expect(health._tag).toBe("ok");
-  //   expect(health).toHaveProperty("value");
-  //   expect(health.value).toBeDefined();
-  //   expect(health.value).toBe("ok");
-  // });
+  test("getHealth", async () => {
+    const health = await checkHealth();
+    expect(health).toBeDefined();
+    expect(health._tag).toBe("ok");
+    expect(health).toHaveProperty("value");
+    assert(health instanceof Ok);
+    expect(health.value).toBeDefined();
+    expect(health.value).toBe("ok");
+  });
 
   afterAll(() => {
     if (proc) {
