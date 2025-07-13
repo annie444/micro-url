@@ -14,7 +14,11 @@ use ts_rs::TS;
 use utoipa::{IntoParams, IntoResponses, ToSchema};
 use uuid::Uuid;
 
-use crate::{TS_OUTPUT_DIR, error::ArcMutexError, utils::BasicError};
+use crate::{
+    TS_OUTPUT_DIR,
+    error::ArcMutexError,
+    utils::{BasicError, BasicResponse},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, IntoParams, TS)]
 #[ts(export)]
@@ -288,8 +292,8 @@ impl IntoResponse for DeleteUrlResponse {
                 info!("URL deleted");
                 (
                     StatusCode::OK,
-                    Json(BasicError {
-                        error: "OK".to_string(),
+                    Json(BasicResponse {
+                        message: "OK".to_string(),
                     }),
                 )
                     .into_response()
@@ -335,7 +339,7 @@ pub enum UpdateUrlResponse {
     #[response(status = StatusCode::INTERNAL_SERVER_ERROR)]
     DatabaseError(#[to_schema] BasicError),
     #[response(status = StatusCode::BAD_REQUEST)]
-    UrlNotFound,
+    UrlNotFound(#[to_schema] BasicError),
     #[response(status = StatusCode::OK)]
     UrlUpdated(#[to_schema] short_link::Model),
 }
@@ -348,15 +352,9 @@ impl IntoResponse for UpdateUrlResponse {
                 info!("{:?}", model);
                 (StatusCode::OK, Json(model)).into_response()
             }
-            UpdateUrlResponse::UrlNotFound => {
-                error!("URL not found");
-                (
-                    StatusCode::NOT_FOUND,
-                    Json(BasicError {
-                        error: "URL not found".to_string(),
-                    }),
-                )
-                    .into_response()
+            UpdateUrlResponse::UrlNotFound(e) => {
+                error!(%e);
+                (StatusCode::NOT_FOUND, Json(e)).into_response()
             }
             UpdateUrlResponse::DatabaseError(e) => {
                 error!(%e);

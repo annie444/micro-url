@@ -3,9 +3,11 @@ set dotenv-load := true
 set dotenv-required := false
 set export := true
 
+mod api "js/api/justfile"
+
 [private]
 default:
-  just --list
+  @just --list
 
 [doc("Install ALL project dependencies (only needs to be run once)")]
 [group("dev")]

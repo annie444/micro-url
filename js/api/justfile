@@ -10,4 +10,18 @@ types:
   fi
   for file in $(find src/types -name "*.ts"); do
     /bin/cat ${file} | grep -Ev '^(\/\/|import|export \*)' >> src/types.ts
+    rm -f ${file}
   done
+
+setup-test logfile='test.log':
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  if [ -f {{ invocation_directory() }}/{{ logfile }} ]; then
+    rm -i {{ invocation_directory() }}/{{ logfile }}
+    touch {{ invocation_directory() }}/{{ logfile }}
+  fi
+  just --justfile=../../justfile run &> {{ invocation_directory() }}/{{ logfile }} &
+  echo "Running tests, output will be logged to ${logfile}"
+  tail -n0 -f {{ invocation_directory() }}/{{ logfile }} | sed '/\([0-9]*\)-\([0-9]*\)-\([0-9]*\)T\([0-9]*\):\([0-9]*\):\([0-9]*\)\.\([0-9]*\).\([0-9]*\):\([0-9]*\) [app]  INFO shuttle_runtime::rt: Starting service/ q'
+
+

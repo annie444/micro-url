@@ -334,7 +334,7 @@ pub async fn update_url(
     Json(payload): Json<NewUrlRequest>,
 ) -> Result<UpdateUrlResponse, UpdateUrlResponse> {
     let Some(short) = short_link::Entity::find_by_id(&id).one(&state.conn).await? else {
-        return Err(UpdateUrlResponse::UrlNotFound);
+        return Err(UpdateUrlResponse::UrlNotFound("URL not found".into()));
     };
     let mut new_url = short.into_active_model();
     if let Some(short_url) = payload.short {

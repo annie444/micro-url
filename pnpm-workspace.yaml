@@ -5,9 +5,13 @@ onlyBuiltDependencies:
   - '@parcel/watcher'
   - '@swc/core'
   - '@tailwindcss/oxide'
+  - core-js
+  - deasync
   - esbuild
+  - fsevents
   - lmdb
   - msgpackr-extract
   - nx
+  - parcel-bundler
   - sharp
   - unrs-resolver

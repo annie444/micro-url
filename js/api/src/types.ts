@@ -172,9 +172,9 @@ export interface LoginRequest {
 
 export interface NewUrlRequest {
   url: string;
-  short: string | null;
-  user: string | null;
-  expiry: string | null;
+  short?: string | null;
+  user?: string | null;
+  expiry?: string | null;
 }
 
 export type JsonValue =
